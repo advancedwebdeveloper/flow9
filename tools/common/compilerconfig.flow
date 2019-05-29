@@ -1,6 +1,7 @@
 import tools/common/config;
 import tools/common/pathutil;
 import lingo/flow/fail;
+// import string;
 
 export {
     // Reads compiler options from config file and url parameters.
@@ -148,6 +149,8 @@ getCompilerConfig() {
         println("WARNING: 'nodejs' set, but 'es6' not. If you want code for Node.js use 'es6=<file> nodejs=1'");
     } else if (includesExistsCheck!= []) {
        iter(includesExists, \path -> println("WARNING: Path: " + path + " does not exist"))
+    } else if (toLowerCase(flowfile) != flowfile) {
+        println("WARNING: For consistency all filenames should be lower case");
     }
     if ((es6file == jsfile) && (jsfile != "")) {
         Failed("ERROR: js and es6 parameters should not be equal.");

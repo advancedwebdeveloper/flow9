@@ -73,6 +73,9 @@ doParseFlowFileOrLoadCached(
 	start : int, end : int
 ) -> Pair<FcPreloadedModule, FcError> {
 	fileinfo = getFcFileInfo(file, config);
+	if(toLowerCase(file) != file) {
+		println("WARNING: For consistency all filenames should be lower case");
+	}
 	if (fileExists(fileinfo.fullpath)) {
 
 		// TODO: Inside this result, we have a list of old exported names, which
