@@ -353,7 +353,7 @@ MDynamicDataTable2T(manager : MaterialManager, parent : MFocusGroup, m : MDynami
 				makeHeaderTitle(false)
 			)
 			|> (\f2 -> MTooltip2T(manager, p, MTooltip(f2, MDynamicText(c.tooltip, [MTooltipDesktop(), sameLightMColor(p)]), []), m2t))
-			|> alignCellContent(c.style, cellBox(i0 + b2i(isSome(checkboxSelection)), true))
+			//|> alignCellContent(c.style, cellBox(i0 + b2i(isSome(checkboxSelection)), true))
 		})
 		|> (\headers : [Tropic] -> {
 
@@ -609,7 +609,7 @@ MDynamicDataTable2T(manager : MaterialManager, parent : MFocusGroup, m : MDynami
 										cell;
 
 								MCellContent2T(manager, p3,	content, rowHeight,	box, crop, m2t)
-								|> alignCellContent(colStyle, box)
+								//|> alignCellContent(colStyle, box)
 							}
 						})
 							|> (\cells -> expandContent(cells, er))
