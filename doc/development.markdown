@@ -21,7 +21,7 @@ handy.
 
 <h3>VS Code</h3>
 
-See [resources/vscode/readme.md](../resources/vscode/readme.md) for instructions on how to install all the
+See [resources/vscode/flow/README.md](../resources/vscode/flow/README.md) for instructions on how to install all the
 *flow* support we have. This is the best editor at this point.
 
 <h3>Sublime Text 3</h3>
@@ -270,7 +270,7 @@ If you do not have Sublimetext, you can do the same manually:
 		flowcpp --profile-bytecode 2000 path/foo.flow
 
   Use this to attribute significant extra cost to natives that manipulate GUI clips
-  (useful to detect reduntant clip tree rebuilds):
+  (useful to detect redundant clip tree rebuilds):
 
 		flowcpp --profile-bytecode 2000 --profile-gui-cost 500 path/foo.flow
 

@@ -29,7 +29,7 @@ ParaAtomic ::= Form, ParaOneWord, TextElement, InteractiveParaAtomic;
 	ParaOneWord(elements : [Form]);
 	InteractiveParaAtomic(elem : ParaAtomic, interactivityId : int);
 
-GhostForm ::= Form, Ghost, CoordinateInspectElement, InspectGhost;
+GhostForm ::= Form, Ghosted; // It is important that GhostForm is a super type of Ghosted
 	Ghost(xc : DynamicBehaviour<double>, yc : DynamicBehaviour<double>, form : Form);
 
 // For dynamic elements, we use a ghost to allow reuse of the physical forms
@@ -82,6 +82,8 @@ renderParagraph(p : [ParagraphElement], s : [ParagraphStyle]) -> Form {
 
 	indent = extractStruct(s, FirstLineIndent(0.0)).indent;
 
+	isSingleLine = containsStruct(s, ParagraphSingleLine());
+
 	// Expand elements into word-units
 	glued : List<ParaAtomic> = expandGlueFragments(p, false, makeList(), makeList(), 0);
 	// Construct our ParaWords
@@ -116,7 +118,8 @@ renderParagraph(p : [ParagraphElement], s : [ParagraphStyle]) -> Form {
 		\ -> {
 			updateFn = \wi -> {
 				// Ignore negative widths
-				w = max(0.0, wi);
+				// It's the safest way to simmulate single line, because reflowParaWords2 does a lot of useful staff.
+				w = if (isSingleLine) 100000.0 else max(0.0, wi);
 				newLines = reflowParaWords(words, w, indent);
 				// We have to rerender even when lines are identical, at minimum to move things because of potential size changes
 				next(lines, newLines);
@@ -322,7 +325,14 @@ reflowParaWords(words : [ParaWord], availableParaWidth : double, paraIndent : do
 }
 
 // here availableWidth is an amount of width for current line
-reflowParaWords2(words : [ParaWord], availableWidth : double, remaining : double, currentWords : [ParaWord], lines : [ParaLine], paraIndent : double) -> [ParaLine] {
+reflowParaWords2(
+	words : [ParaWord],
+	availableWidth : double,
+	remaining : double,
+	currentWords : [ParaWord],
+	lines : [ParaLine],
+	paraIndent : double,
+) -> [ParaLine] {
 	addLine = \cw, indent -> {
 		if (cw != []) arrayPush(lines, ParaLine(cw, indent)) else lines;
 	}
@@ -358,13 +368,14 @@ reflowParaWords2(words : [ParaWord], availableWidth : double, remaining : double
 		};
 		makeParaWord2 = \word2, form2 -> {
 			g = word2.ghosted;
-			replaceWordGhosted = \-> {
-				switch (g : Ghosted) {
+			replaceWordGhosted = \ -> {
+				r : Ghosted = switch (g : Ghosted) {
 					Empty(): Empty();
 					Ghost(xc, yc, __): Ghost(xc, yc, form2);
 					InspectGhost(xc, yc, wh, lh, ln, __): InspectGhost(xc, yc, wh, lh, ln, form2);
 					CoordinateInspectElement(index, x, y, wh, lh, __): CoordinateInspectElement(index, x, y, wh, lh, form2);
 				}
+				r;
 			};
 
 			ghosted = replaceWordGhosted();
@@ -654,7 +665,7 @@ RenderLine(
 			Ghost(xc, yc, fm): {
 				nextDistinct(xc, ^alignmentOffset);
 				nextDistinct(yc, y + dy);
-				None();
+				Some(applyStylesAndOffset(Empty()));
 			}
 			InspectGhost(xc, yc, wh, lh, ln,  fm): {
 				nextDistinct(xc, ^alignmentOffset);
@@ -662,7 +673,7 @@ RenderLine(
 				nextDistinct(wh, WidthHeight(m.width, m.height));
 				nextDistinct(lh, lineHeight);
 				nextDistinct(ln, lineNumber);
-				None();
+				Some(applyStylesAndOffset(Empty()));
 			}
 			CoordinateInspectElement(in, xc, yc, wh, lh, fm): {
 				fo = applyStylesAndOffset(fm);
@@ -690,7 +701,6 @@ applyIntStylesAndHighlighting(
 	height : double,
 	interWord : double,
 ) -> Form {
-
 	getStyleForBackgroundFromCharStyle = \s -> eitherMap(
 		tryExtractStruct(s, BackgroundFill(white)),
 		\backFill -> [
@@ -703,7 +713,10 @@ applyIntStylesAndHighlighting(
 	makeBackRect = \defStyle, dynStyle -> Rectangle(
 		width + interWord,
 		height,
-		replaceStructMany(defStyle, getStyleForBackgroundFromCharStyle(dynStyle))
+		replaceStructMany(
+			getStyleForBackgroundFromCharStyle(defStyle),
+			getStyleForBackgroundFromCharStyle(dynStyle)
+		)
 	);
 
 	dynamicCharStyleBM = tryExtractStruct(styles, DynamicCharStyle(make([])));
@@ -719,16 +732,15 @@ applyIntStylesAndHighlighting(
 				)
 			);
 
-			defBackStyle = getStyleForBackgroundFromCharStyle(txtStyle);
 			// We draw custom highlighting to fix gaps for cases of justifying alignment
-			// And to have more straght highlighting.
+			// And to have more straight and pretty highlighting.
 			eitherMap(
 				dynamicCharStyleBM,
 				\dynCharStyle -> Pair(
 					Select(dynCharStyle.styleB, \chStyle -> makeTxt(chStyle)),
-					Select(dynCharStyle.styleB, \chStyle -> makeBackRect(defBackStyle, chStyle))
+					Select(dynCharStyle.styleB, \chStyle -> makeBackRect(txtStyle, chStyle))
 				),
-				Pair(makeTxt([]), makeBackRect(defBackStyle, []))
+				Pair(makeTxt([]), makeBackRect(txtStyle, []))
 			)
 		}
 		default : Pair(

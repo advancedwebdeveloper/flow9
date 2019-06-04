@@ -85,11 +85,8 @@ MComponent2T(
 					]
 					|> (\st -> arrayPushMaybe(st, maybeMap(onClick, \c -> c.monitorBehaviour))),
 					focusClicks.iScriptBehaviour,
-					// extractDynamicBehaviours(enabled, "enabled", MLowLevelChanges()),
 					extractDynamicBehavioursEx(enabled, "enabled", ISEnableEvent()),
-					// extractDynamicBehaviours(focusEnabled, "focus_enabled", MLowLevelChanges()),
 					extractDynamicBehavioursEx(focusEnabled, "focus_enabled", ISEnableEvent()),
-					// extractDynamicBehaviours(clickEnabled, "click_enabled", MLowLevelChanges()),
 					extractDynamicBehavioursEx(clickEnabled, "click_enabled", ISEnableEvent())
 				])
 			),
@@ -115,7 +112,7 @@ MComponent2T(
 								[
 									extractStruct(state, MRipplePosition(point)),
 									extractStruct(state, MRippleColor(const(if (getLightBackground(p)) MBlack() else MWhite()))),
-									extractStruct(state, MRippleOpacity(const(1.0))),
+									extractStruct(state, MRippleOpacity(const(0.1))),
 									extractStruct(state, MRippleType(const(MNoRipple()))),
 									MRippleFocused(fmin(highlightOnFocus, extractStruct(state, MRippleFocused(focus.focused)).focused)),
 									MRippleHovered(fmin(highlightOnHover, extractStruct(state, MRippleHovered(focus.hover)).hovered)),

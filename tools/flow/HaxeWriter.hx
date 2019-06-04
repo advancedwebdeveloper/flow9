@@ -63,6 +63,7 @@ class HaxeWriter {
 					// Some names, like Native and RenderSupport need a gentle extra renaming to avoid colliding
 					// with other implementations of these natives
 					var parts = name.split(".");
+<<<<<<< HEAD
 					var cl = parts[0];
 					var cla = cl + if (cl == "Native"
 									|| cl == "RenderSupport"
@@ -78,6 +79,15 @@ class HaxeWriter {
 					if (js && renamed == "NativeHx.length") {
 						// .length is a built-in property in JS, so we have to work around this haXe bug
 						renamed = "NativeHx.length__";
+=======
+					var cla = parts[0];
+					nativeClasses.set(cla, true);
+					var renamed = cla + "." + parts[1];
+
+					if (js && renamed == "Native.length") {
+						// .length is a built-in property in JS, so we have to work around this haXe bug
+						renamed = "Native.length__";
+>>>>>>> master
 					}
 
 					//TODO: try to actually use the native
@@ -153,8 +163,13 @@ class HaxeWriter {
 			wr(']);\n');
 		}
 		
+<<<<<<< HEAD
 		if (nativeClasses.exists("RenderSupportHx")) {
 			wr("		new RenderSupportHx();\n");
+=======
+		if (nativeClasses.exists("RenderSupport")) {
+			wr("		new RenderSupport();\n");
+>>>>>>> master
 		}
 		
 		wr('

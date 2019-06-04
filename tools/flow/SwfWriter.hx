@@ -646,17 +646,7 @@ class SwfWriter {
 						// Some names, like Native and RenderSupport need a gentle extra renaming to avoid colliding
 						// with other implementations of these natives
 						var parts = name.split(".");
-						var cl = parts[0];
-						var cla = cl + if (cl == "Native"
-										|| cl == "RenderSupport" 
-										|| cl == "SoundSupport"
-										|| cl == "HttpSupport"
-										|| cl == "Database"
-										|| cl == "FlowFileSystem"
-										|| cl == "LocalyticsSupport"
-										|| cl == "NotificationsSupport"
-										|| cl == "GeolocationSupport"
-										|| cl == "WebSocketSupport") { "Hx"; } else "";
+						var cla = parts[0];
 						nativeClasses.set(cla, true);
 
 						// Find where to put the native reference
@@ -695,10 +685,10 @@ class SwfWriter {
 					}
 				}
 			}
-			if (nativeClasses.get("RenderSupportHx") != null) {
+			if (nativeClasses.get("RenderSupport") != null) {
 				// We have to construct this guy!
-				extraopcodes.push(OFindPropStrict(ctx.type('RenderSupportHx')));
-				extraopcodes.push(OConstructProperty(ctx.type('RenderSupportHx'),0));
+				extraopcodes.push(OFindPropStrict(ctx.type('RenderSupport')));
+				extraopcodes.push(OConstructProperty(ctx.type('RenderSupport'),0));
 				extraopcodes.push(OPop);
 			}
 			// Empty Sequence is invalid

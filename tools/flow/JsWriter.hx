@@ -105,8 +105,13 @@ class JsOverlayGroup {
 		HaxeRuntime._structargtypes_ = new haxe.ds.IntMap();
 ");
 
+<<<<<<< HEAD
 		if (nativeClasses.exists("RenderSupportHx")) {
 			o2.writeString("\t\tnew RenderSupportHx();\n");
+=======
+		if (nativeClasses.exists("RenderSupport")) {
+			o2.writeString("\t\tnew RenderSupport();\n");
+>>>>>>> master
 		}
 
 		o2.writeString("\t}\n}\n");
@@ -114,7 +119,11 @@ class JsOverlayGroup {
 
 		Profiler.get().profileStart("Compile haXe");
 
+<<<<<<< HEAD
 		var args = ["-js", flowNativesJSFile, flowJSProgramHaxeFile, "-D", "jsruntime", "-cp", "src", "-lib", "pixijs", "-D", "js-classic"];
+=======
+		var args = ["-js", flowNativesJSFile, flowJSProgramHaxeFile, "-D", "jsruntime", "-cp", "platforms/js", "-cp", "platforms/common/haxe", "-lib", "pixijs", "-D", "js-classic"];
+>>>>>>> master
 		for (a in extra_args)
 			args.push(a);
 
@@ -300,6 +309,7 @@ class JsWriter {
 		// Some names, like Native and RenderSupport need a gentle extra renaming to avoid colliding
 		// with other implementations of these natives
 		var parts = name.split(".");
+<<<<<<< HEAD
 		var cl = parts[0];
 		var cla = cl + if (cl == "Native"
 						|| cl == "RenderSupport"
@@ -315,6 +325,13 @@ class JsWriter {
 		var renamed = cla + "." + parts[1];
 		if (renamed == "NativeHx.length") {
 			renamed = "NativeHx.length__";
+=======
+		var cla = parts[0];
+		ovl.nativeClasses.set(cla, true);
+		var renamed = cla + "." + parts[1];
+		if (renamed == "Native.length") {
+			renamed = "Native.length__";
+>>>>>>> master
 		}
 		return renamed;
 	}
@@ -468,7 +485,11 @@ function OTC1(fn, fn_name) {
 
 		// main is started after all resources are loaded
 		// by RenderSupportJSPixi.
+<<<<<<< HEAD
 		wr("if (typeof RenderSupportHx == 'undefined' && typeof RenderSupportJSPixi == 'undefined') " +
+=======
+		wr("if (typeof RenderSupport == 'undefined' && typeof RenderSupportJSPixi == 'undefined') " +
+>>>>>>> master
 				renameId("main") + "();");
 		
 		Profiler.get().profileEnd("Js export");

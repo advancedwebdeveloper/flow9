@@ -62,7 +62,7 @@ TFlexibleGrid(items : Transform<[Tropic]>, style : [TFlexibleGridStyle]) -> Trop
 			wrapNewColumn,
 			isSome(order),
 			verticalGrid,
-			eitherMap(maxRows, \og -> Some(og), None()),
+			maxRows,
 			lockWidth
 		);
 
@@ -186,7 +186,7 @@ TFlexibleGrid(items : Transform<[Tropic]>, style : [TFlexibleGridStyle]) -> Trop
 							if (!contains(itemsSizes, None())) {
 								blocks = map(itemsSizes, \sz -> either(sz, WidthHeight(0., 0.)) |> (\wh -> BFBlock(wh.width, wh.height)));
 
-								bfFit(stageSize, blocks, parameters)
+								bfFit(stageSize, blocks, parameters);
 							} else {
 								[];
 							}
@@ -304,7 +304,7 @@ bfFindNode(i : int, state : BFState, block : BFBlock, par : BFParameters) -> BFS
 					acc;
 				}
 			} else {
-				if (state.l[l].x <= state.s.width - block.w && (if (!par.lockWidth) state.l[l].y <= state.s.height - block.h else true)) {
+				if (state.l[l].x <= state.s.width - block.w && (par.lockWidth || state.l[l].y <= state.s.height - block.h)) {
 					p = getBFLinePoint(state.l, l, block, par);
 
 					if (p.y < acc.y && checkBFMaxRows(state, block, p, par)) {
@@ -322,11 +322,11 @@ bfFindNode(i : int, state : BFState, block : BFBlock, par : BFParameters) -> BFS
 		if (par.vertical) {
 			maxY = foldTree(state.p, 0.0, \k, v, acc -> if (v.second.y + v.first.h > acc) v.second.y + v.first.h else acc);
 
-			BFState(state.l, WidthHeight(state.s.width, maxY + block.h), state.p);
+			BFState(state.l, WidthHeight(state.s.width, maxY + block.h + 1.0), state.p);
 		} else {
 			maxX = foldTree(state.p, 0.0, \k, v, acc -> if (v.second.x + v.first.w > acc) v.second.x + v.first.w else acc);
 
-			BFState(state.l, WidthHeight(maxX + block.w, state.s.height), state.p);
+			BFState(state.l, WidthHeight(maxX + block.w + 1.0, state.s.height), state.p);
 		}
 	} else {
 		BFState(updateBFLine(state, block, p, par), state.s, setTree(state.p, i, Pair(block, p)));
@@ -350,7 +350,7 @@ updateBFLine(state : BFState, block : BFBlock, point : Point, par : BFParameters
 					false;
 				}
 			} else {
-				true;
+				!par.ordered || l.x >= point.x
 			}
 		)
 		|> (\ln -> {
@@ -380,7 +380,7 @@ updateBFLine(state : BFState, block : BFBlock, point : Point, par : BFParameters
 					false;
 				}
 			} else {
-				true;
+				!par.ordered || l.y >= point.y
 			}
 		)
 		|> (\ln -> {
@@ -458,7 +458,7 @@ getBFLinePoint(line : [Point], i : int, block : BFBlock, par : BFParameters) -> 
 		minX = line[i].x;
 		maxX = minX + block.w;
 
-		fold(subrange(line, i, length(line)), 0.0, \acc, l -> {
+		fold(tailFrom(line, i), 0.0, \acc, l -> {
 			if (l.x >= minX && l.x < maxX && l.y > acc) {
 				l.y;
 			} else {

@@ -1,5 +1,6 @@
 import fform/optimizefform;
 import fform/fformutils;
+import fform/renderform3d;
 import form/renderform;
 import formats/svg/svg;
 
@@ -875,8 +876,12 @@ renderFForm(rform : FForm, zorder : [int]) -> FRenderResult {
 								});
 								makeGlow(^radius, ^spread, ^color, ^alpha, ^inner);
 							}
-							Shader(vertex, fragment, uniform) : {
-								makeShader(vertex, fragment, uniform);
+							Shader(vertex, fragment, uniforms) : {
+								makeShader(
+									strSplitLeave(strReplace(vertex, "\t", ""), "\n"),
+									strSplitLeave(strReplace(fragment, "\t", ""), "\n"),
+									map(uniforms, \u -> [u.name, u.type, u.value])
+								);
 							}
 						});
 						setClipCallstack(clip, stack);
@@ -1109,6 +1114,8 @@ renderFForm(rform : FForm, zorder : [int]) -> FRenderResult {
 			timeRange = tryExtractStruct(style, FVideoTimeRange(const(0.), const(0.)));
 			playbackRate = tryExtractStruct(style, FVideoPlaybackRate(make(0.)));
 			viewBounds = tryExtractStruct(style, ViewBounds(const(zeroBounds)));
+			getCurrentFrame = tryExtractStruct(style, FVideoGetCurrentFrame(ref \ -> ""));
+			additionalSources = extractStruct(style, FVideoAdditionalSources([])).sources;
 
 			video =
 				makeVideo(
@@ -1135,6 +1142,8 @@ renderFForm(rform : FForm, zorder : [int]) -> FRenderResult {
 					}
 				);
 
+			iter(additionalSources, \s -> addVideoSource(video, s.url, s.type));
+
 			playVideo(video, addServerPathIfRelative(applyMediaPathMapping(filename)), !getValue(playing));
 
 			if (controls != []) setVideoControls(video, controls);
@@ -1159,6 +1168,8 @@ renderFForm(rform : FForm, zorder : [int]) -> FRenderResult {
 
 				streamListenerFn(code);
 			});
+
+			maybeApply(getCurrentFrame, \gcf -> gcf.fn := \ -> getVideoCurrentFrame(video));
 
 			disp =
 				concatA([

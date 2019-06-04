@@ -1,15 +1,10 @@
 import Flow;
 import Native;
-import RenderSupport;
 import Bytecode;
-import SoundSupport;
 import BytecodeWriter;
 import Database;
-import HttpSupport;
 import Extractor;
 import HtmlSupport;
-import NotificationsSupport;
-import GeolocationSupport;
 import SwfWriter;
 import Refactor;
 import Position;
@@ -19,7 +14,6 @@ import sys.io.File;
 import sys.io.Process;
 import sys.FileSystem;
 import Sys;
-import FlowFileSystem;
 import haxe.Http;
 import haxe.io.Path;
 
@@ -611,7 +605,9 @@ class FlowNeko extends Options {
 		var args = ["-main", "FlowProgram"];
 		if (root != '.') {
 			args.push('-cp');
-			args.push(root+'/src');
+			args.push(root+'/platforms/nekocompiler');
+			args.push('-cp');
+			args.push(root+'/platforms/common/haxe');
 		}
 		if (StringTools.endsWith(haxe_target, ".n")) {
 			args.push("-neko");
@@ -673,7 +669,9 @@ class FlowNeko extends Options {
 		var args = [];
 		if (root != '.') {
 			args.push('-cp');
-			args.push(root+'/src');
+			args.push(root+'/platforms/js');
+			args.push('-cp');
+			args.push(root+'/platforms/common/haxe');
 		}
 		if (debug > 0) {
 			args.push("-debug");
@@ -725,14 +723,6 @@ class FlowNeko extends Options {
 			} else {
 				Errors.report("Warning: Empty dfonts field in font config file");
 			}
-
-			// Embed the dfont index files
-			#if sys
-			for (dfont in fontconfig.dfonts) {
-				if (dfont.embed)
-					embedDFont(dfont, args, tmpfiles);
-			}
-			#end
 
 		} else {
 			Errors.report("Warning: Missing font configuration file");
@@ -927,7 +917,7 @@ class FlowNeko extends Options {
 			          "-swf-lib", resourceFile, 
 			          "-resource",  fontNames + "@fontnames",
 			          "-swf-header", "1024:600:30:FFFFFF", "-D", "jsruntime",
-			          '-cp', root+'/src', '-cp', root, '-cp', '.'
+			          '-cp', root+'/platforms/nekocompiler', '-cp', root, '-cp', '.'
 			          ];
 			if (debug > 0) {
 				args.push("-debug");

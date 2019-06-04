@@ -28,9 +28,15 @@ class SwfRunner {
 		} catch (e : Dynamic) {
 			var cs = Assert.callStackToString(haxe.CallStack.exceptionStack());
 			// TODO: Register some native that we can call and complain
+<<<<<<< HEAD
 			NativeHx.println("FATAL ERROR: main reported: " + e);
 			trace(cs);
 			NativeHx.callFlowCrashHandlers("[main]: " + e);
+=======
+			Native.println("FATAL ERROR: main reported: " + e);
+			trace(cs);
+			Native.callFlowCrashHandlers("[main]: " + e);
+>>>>>>> master
 			#if flash
 		 	sendError(e);
 			#end
