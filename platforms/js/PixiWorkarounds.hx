@@ -629,6 +629,10 @@ class PixiWorkarounds {
 
 					// TODO: check render flags, how to process stuff here
 					this.worldAlpha = this.alpha * this.parent.worldAlpha;
+
+					if (this.stage != null) {
+						this.stageChanged = true;
+					}
 				}
 
 				for (let i = 0, j = this.children.length; i < j; ++i)
@@ -645,8 +649,8 @@ class PixiWorkarounds {
 					if (this.child && !this.child.transformChanged) {
 						this.child.transformChanged = true;
 
-						RenderSupportJSPixi.PixiStageChanged = true;
-						RenderSupportJSPixi.TransformChanged = true;
+						RenderSupportJSPixi.stageChanged = true;
+						RenderSupportJSPixi.transformChanged = true;
 					}
 
 					if (this.accessWidget) {

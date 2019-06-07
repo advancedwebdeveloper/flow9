@@ -3,7 +3,7 @@ import material/internal/material_edit_grid;
 
 export {
 	IScriptForm ::= FForm, ISTranslate, ISScale, ISRotate, ISAlpha, ISAvailable2, ISSize2, ISSetPending, ISBaseline, ISGroup, ISGroup2, ISDecorator2,
-		ISBorder, ISMask2, ISFilter2, ISCrop2, ISAccess, ISFullWindow, ISSetPending, ISDynamicGroup2, ISMForm;
+		ISBorder, ISMask2, ISFilter2, ISCrop2, ISAccess, ISFullWindow, ISSetPending, ISDynamicGroup2, ISMForm, ISRenderFrame;
 
 		ISTranslate : (x : double, y : double, form : IScriptForm);
 		ISScale : (x : double, y : double, form : IScriptForm);
@@ -26,6 +26,7 @@ export {
 		ISSetPending : (pending : int, form : IScriptForm);
 		ISDynamicGroup2(stackChanges : [FGroupChange], currentStack : [IScriptForm]);
 		ISMForm : (form : PForm);
+		ISRenderFrame (form : IScriptForm);
 
 	takeLogicalSnapshot(f : FForm) -> IScriptForm;
 	deserializeLogicalSnapshot(manager : MaterialManager, serializeForm : string, inputs : bool, m2t : (Material, MFocusGroup) -> Tropic) -> FForm;
@@ -157,6 +158,7 @@ takeLogicalSnapshot(f : FForm) -> IScriptForm {
 		FTextInput(__, __, __): FEmpty(); //TODO:
 		FMForm(form): ISMForm(takeSnapshot(form) |> form2PForm);
 		FNativeForm(__, __, fform, __): takeLogicalSnapshot(fform());
+		FRenderFrame(fform): ISRenderFrame(takeLogicalSnapshot(fform));
 	}
 }
 
@@ -211,6 +213,8 @@ IScriptForm2FForm(manager : MaterialManager, f : IScriptForm, m2t : (Material, M
 		ISDynamicGroup2(stackChanges, currentStack):
 			FDynamicGroup2(make(stackChanges), make(map(currentStack, \cs -> IScriptForm2FForm(manager, cs, m2t, id, inputs))), captureCallstack());
 		ISMForm(form) : FMForm(form |> pForm2Form);
+		ISRenderFrame(form): FRenderFrame(
+			IScriptForm2FForm(manager, form, m2t, id, inputs));
 		FParagraph(text, style): f; //TODO:
 		FText(text, characterStyle): {
 			if (inputs && text != "") {
@@ -390,6 +394,8 @@ IScriptForm2FForm(manager : MaterialManager, f : IScriptForm, m2t : (Material, M
 		FScale(x, y, form): FScale(x, y,
 			IScriptForm2FForm(manager, form, m2t, id, inputs));
 		FFullWindow(fw, av, form): FFullWindow(fw, av,
+			IScriptForm2FForm(manager, form, m2t, id, inputs));
+		FRenderFrame(form): FRenderFrame(
 			IScriptForm2FForm(manager, form, m2t, id, inputs));
 		FDynamicGroup2(stackChanges, currentStack, stack):
 			FDynamicGroup2(stackChanges, make(map(getValue(currentStack), \cs -> IScriptForm2FForm(manager, cs, m2t, id, inputs))), stack);

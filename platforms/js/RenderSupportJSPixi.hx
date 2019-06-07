@@ -27,8 +27,6 @@ class RenderSupportJSPixi {
 	public static var RendererType : String = Util.getParameter("renderer") != null ? Util.getParameter("renderer") : untyped Browser.window.useRenderer;
 
 	private static var MousePos : Point = new Point(0.0, 0.0);
-	private static var PixiStageChanged : Bool = true;
-	private static var TransformChanged : Bool = true;
 	private static var isEmulating : Bool = false;
 	private static var AnimationFrameId : Int = -1;
 
@@ -50,6 +48,9 @@ class RenderSupportJSPixi {
 	// screen keyboard
 	private static var WindowTopHeight : Int;
 	private static var RenderSupportJSPixiInitialised : Bool = init();
+
+	public static var stageChanged : Bool = true;
+	public static var transformChanged : Bool = true;
 
 	@:overload(function(event : String, fn : Dynamic -> Void, ?context : Dynamic) : Void {})
 	public static inline function on(event : String, fn : Void -> Void, ?context : Dynamic) : Void {
@@ -764,11 +765,11 @@ class RenderSupportJSPixi {
 
 		AccessWidget.updateAccessTree();
 
-		if (PixiStageChanged || VideoClip.NeedsDrawing()) {
-			PixiStageChanged = false;
+		if (stageChanged || VideoClip.NeedsDrawing()) {
+			stageChanged = false;
 
-			if (TransformChanged) {
-				TransformChanged = false;
+			if (transformChanged) {
+				transformChanged = false;
 
 				PixiRenderer.render(PixiStage, null, true, null, false);
 			} else {
@@ -777,6 +778,8 @@ class RenderSupportJSPixi {
 
 			emit("stagechanged", timestamp);
 		}
+
+		emit("postdrawframe", timestamp);
 
 		requestAnimationFrame();
 	}
@@ -795,14 +798,14 @@ class RenderSupportJSPixi {
 			if (untyped __js__('typeof e.data == "string"'))
 				fn(e.data, e.origin);
 		};
-		
+
 		on("message", handler);
 		return function() { off("message", handler); };
 	}
 
 	public static inline function InvalidateStage() : Void {
-		TransformChanged = true;
-		PixiStageChanged = true;
+		transformChanged = true;
+		stageChanged = true;
 	}
 
 	public static function getPixelsPerCm() : Float {
@@ -1163,6 +1166,10 @@ class RenderSupportJSPixi {
 
 	public static function makeClip() : FlowContainer {
 		return new FlowContainer();
+	}
+
+	public static function makeRenderFrame() : FlowRenderFrame {
+		return new FlowRenderFrame();
 	}
 
 	public static function setClipCallstack(clip : DisplayObject, callstack : Dynamic) : Void {
@@ -1554,7 +1561,7 @@ class RenderSupportJSPixi {
 	}
 
 	private static inline function updateTransform() : Void {
-		if (TransformChanged && PixiStage != null) {
+		if (transformChanged && PixiStage != null) {
 			var cacheParent = PixiStage.parent;
 			PixiStage.parent = untyped PixiStage._tempDisplayObjectParent;
 
@@ -1562,7 +1569,7 @@ class RenderSupportJSPixi {
 
 			PixiStage.parent = cacheParent;
 
-			TransformChanged = false;
+			transformChanged = false;
 		}
 	}
 

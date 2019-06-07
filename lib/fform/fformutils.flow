@@ -111,6 +111,7 @@ fform2form(fform : FForm) -> Form {
 		FPicture(url, size, s) : Inspect([ISize(size)], Picture(url, s));
 		FConstructor(form, fn) : Constructor(fform2form(form), fn);
 		FCreate2(current, fn) : Create2(ref fform2form(^current), \ -> fform2form(fn()));
+		FRenderFrame(form) : fform2form(form);
 		FFullWindow(fullscreen, available, form) : FullWindow(fullscreen, Inspect([IAvailable(available)], fform2form(form)));
 		FBaseline(b, form) : Baseline(b, fform2form(form));
 		FSize2(s, form) : Size2(s, fform2form(form));
@@ -1022,6 +1023,11 @@ fform2s(rform : FForm, level : int) -> string {
 			generateSpaces + structName + "\n" +
 			fform2s(^current, level + 1) + "\n" +
 			fform2s(fn(), level + 1) + "\n" +
+			generateSpaces + ")"
+		}
+		FRenderFrame(form): {
+			generateSpaces + structName + "\n" +
+			fform2s(form, level + 1) + "\n" +
 			generateSpaces + ")"
 		}
 		FText(text, style): {

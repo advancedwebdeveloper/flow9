@@ -31,7 +31,12 @@ class DisplayObjectHelper {
 				});
 			}
 
-			RenderSupportJSPixi.InvalidateStage();
+			if (untyped clip.stage != null) {
+				untyped clip.stage.stageChanged = true;
+				untyped clip.stage.transformChanged = true;
+			} else {
+				RenderSupportJSPixi.InvalidateStage();
+			}
 		}
 	}
 

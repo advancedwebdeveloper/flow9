@@ -842,7 +842,12 @@ parseF3DNativeObject(object : native) -> Pair<F3DNative, [() -> void]> {
 		}))),
 		[
 			add3DEventListener(object, "childrenchanged", \ -> {
-				next(children, get3DObjectChildren(object));
+				^uns();
+				newChildren = get3DObjectChildren(object);
+
+				if (map(getValue(children), get3DObjectId) != map(newChildren, get3DObjectId)) {
+					uns := interruptibleTimer(1, \ -> next(children, newChildren));
+				}
 			}),
 			\ -> dispUnsA(uns)
 		]

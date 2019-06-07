@@ -5,7 +5,7 @@ import media/mediastream;
 export {
 	FForm ::= FText, FParagraph, FGraphics, FTranslate, FScale, FRotate, FAlpha, FVisible, FRenderable, FGroup, FGroup2,
 		FEmpty, FBorder, FMask2, FInteractive, FFilter2, FCursor, FInspect, FMutable2, FDecorator2,
-		FCrop2, FControlFocus, FPicture, FConstructor, FCreate2, FFullWindow, FMForm,
+		FCrop2, FControlFocus, FPicture, FConstructor, FCreate2, FRenderFrame, FFullWindow, FMForm,
 		FBaseline, FSize2, FAvailable2, FAccess, FRealHTML, FSetPending, FVideo, FTextInput, FDynamicGroup2, FNativeForm;
 
 	FText(text : string, style : [CharacterStyle]);
@@ -86,6 +86,8 @@ export {
 	FDisposer(form : FForm, fn : () -> void) -> FConstructor {
 		FConstructor(form, \ -> fn)
 	}
+
+	FRenderFrame(form : FForm);
 
 	FFullWindow(fullscreen : DynamicBehaviour<bool>, available : DynamicBehaviour<WidthHeight>, form : FForm);
 

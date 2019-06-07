@@ -87,6 +87,7 @@ fform2tropic(f : FForm) -> Tropic {
 		}
 		FVideo(filename, wh, style) : TVideo(filename, wh, style);
 		FTextInput(__, __, __) : TEmpty(); // TODO:
+		FRenderFrame(form) : fform2tropic(form); // TODO:
 		FNativeForm(init, __, __, __) : cast(init : flow -> Tropic);
 	}
 }

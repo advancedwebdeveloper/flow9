@@ -23,6 +23,14 @@ optimizeFForm(form) {
 			}
 		}
 		FCreate2(__, __): form;
+		FRenderFrame(f): {
+			of = optimizeFForm(f);
+
+			if (of == f)
+				form
+			else
+				FRenderFrame(of);
+		}
 		FText(t, style): {
 			if (strlen(t) == 0)
 				FEmpty()

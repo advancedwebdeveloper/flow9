@@ -4,7 +4,7 @@ export {
 	// Static version of FForm, useful for serialization
 
 	SFForm ::= FText, SFParagraph, FGraphics, SFTranslate, SFScale, SFRotate, SFAlpha, SFVisible, SFRenderable, SFGroup, SFGroup2, SFDecorator2,
-		FEmpty, SFBorder, SFMask, SFFilter, SFCrop, SFPicture, SFFullWindow, FMForm, SFAccess, SFRealHTML, SFSetPending, SFVideo, SFTextInput;
+		FEmpty, SFBorder, SFMask, SFFilter, SFCrop, SFPicture, SFFullWindow, FMForm, SFAccess, SFRealHTML, SFSetPending, SFVideo, SFTextInput, SFRenderFrame;
 
 	SFParagraph(text : string, style : [SFParagraphStyle]);
 		SFParagraphStyle ::= CharacterStyle, SFParagraphWidth, CommonAlignment, CropWords, InterlineSpacing;
@@ -96,6 +96,8 @@ export {
 			SCursorOpacity(opacity : double);
 			SCursorWidth(width : double);
 
+	SFRenderFrame(form : SFForm);
+
 	fform2sfform(fform : FForm, callConstructors : bool) -> SFForm;
 	sfform2fform(sfform : SFForm) -> FForm;
 }
@@ -174,6 +176,7 @@ fform2sfform(fform : FForm, callConstructors : bool) -> SFForm {
 		FDynamicGroup2(__, currentStack, __) : SFGroup(map(getValue(currentStack), \l -> fform2sfform(l, callConstructors)), true);
 		FVideo(fn, wh, s) : SFVideo(fn, getValue(wh), FVideoStyle2SFVideoStyle(s));
 		FNativeForm(__, __, ff, __): fform2sfform(ff(), callConstructors);
+		FRenderFrame(form): SFRenderFrame(fform2sfform(form, callConstructors));
 		FTextInput(c, wh, s) : SFTextInput(getValue(c), getValue(wh), FTextInputStyle2SFTextInputStyle(s));
 	}
 }
@@ -319,6 +322,7 @@ sfform2fform(sfform : SFForm) -> FForm {
 		SFAccess(properties, form) : FAccess(SFAccessProperty2FAccessProperty(properties), sfform2fform(form));
 		SFVideo(fn, wh, s) : FVideo(fn, make(wh), SFVideoStyle2FVideoStyle(s));
 		SFTextInput(c, wh, s) : FTextInput(make(c), make(wh), SFTextInputStyle2FTextInputStyle(s));
+		SFRenderFrame(form) : FRenderFrame(sfform2fform(form));
 
 		SFFullWindow(fs, form) : FFullWindow(make(fs), make(zeroWH), sfform2fform(form));
 		SFCrop(left, top, width, height, form) : FCrop(const(left), const(top), const(width), const(height), sfform2fform(form));

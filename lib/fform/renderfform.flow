@@ -181,6 +181,12 @@ renderFForm(rform : FForm, zorder : [int]) -> FRenderResult {
 
 			FRenderResult(d.clips, d.disposers, d.capabilities)
 		}
+		FRenderFrame(form): {
+			clip = makeRenderFrame();
+			d = renderFForm(form, zorder);
+
+			attachFChildren(clip, d.clips, d.disposers, d.capabilities);
+		}
 		FText(text, style): {
 			if (!js && extractStruct(style, EscapeHTML(false)).escape) {
 				renderFText(text |> escapeHtml, style);

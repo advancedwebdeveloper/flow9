@@ -1,4 +1,3 @@
-import js.Browser;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 
@@ -10,6 +9,7 @@ class FlowContainer extends Container {
 	private var clipVisible : Bool = false;
 	public var transformChanged : Bool = true;
 	private var childrenChanged : Bool = true;
+	public var stage : Dynamic;
 
 	public function new(?worldVisible : Bool = false) {
 		super();
@@ -20,6 +20,10 @@ class FlowContainer extends Container {
 	}
 
 	public override function addChild<T:DisplayObject>(child : T) : T {
+		if (stage != null) {
+			untyped child.stage = stage;
+		}
+
 		var newChild = super.addChild(child);
 
 		if (newChild != null) {
@@ -38,6 +42,10 @@ class FlowContainer extends Container {
 	}
 
 	public override function addChildAt<T:DisplayObject>(child : T, index : Int) : T {
+		if (stage != null) {
+			untyped child.stage = stage;
+		}
+
 		var newChild = super.addChildAt(child, index > children.length ? children.length : index);
 
 		if (newChild != null) {
@@ -56,6 +64,8 @@ class FlowContainer extends Container {
 	}
 
 	public override function removeChild(child : DisplayObject) : DisplayObject {
+		untyped child.stage = null;
+
 		var oldChild = super.removeChild(child);
 
 		if (oldChild != null) {

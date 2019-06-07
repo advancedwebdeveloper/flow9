@@ -460,7 +460,7 @@ TScroll(manager : TManager, content : Tropic, box : Tropic, style : [TScrollStyl
 			)
 		else
 			TAcc(
-				c.form,
+				FRenderFrame(c.form),
 				b.metrics,
 				b.minWidth,
 				b.minHeight,
