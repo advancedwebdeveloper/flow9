@@ -334,7 +334,7 @@ getStaticFormSizeReal(form : Form, getExactTopPoint : bool) -> FormMetrics {
 		NativeForm(__, metrics, __, fn): {
 			getValue(metrics);
 		}
-		DynamicGroup2(__, combiner, currentStack, __): {
+		DynamicGroup2(items, combiner, __): {
 			plus : (double, double) -> double =
 				\x, y -> x + y;
 			combineWidth =
@@ -347,7 +347,7 @@ getStaticFormSizeReal(form : Form, getExactTopPoint : bool) -> FormMetrics {
 					combineHeight(fm1.height, fm2.height)
 				);
 			fold(
-				getValue(currentStack),
+				fgetValue(items),
 				zeroMetrics,
 				\metrics : FormMetrics, f : Form ->
 					combine(
@@ -454,7 +454,7 @@ isCacheWorthy(form) {
 		ControlFocus(focus, f): isCacheWorthy(f);
 		FullWindow(fs, f): isCacheWorthy(f);
 		NativeForm(__, __, __, fn): false;
-		DynamicGroup2(__, __, __, __): false;
+		DynamicGroup2(__, __, __): false;
 	}
 }
 
@@ -514,7 +514,7 @@ isStaticForm2(form, getExactTopPoint) {
 		ControlFocus(focus, f): isStaticForm2(f, getExactTopPoint);
 		FullWindow(fs, f): isStaticForm2(f, getExactTopPoint);
 		NativeForm(__, __, __, fn): false;
-		DynamicGroup2(__, __, __, __): false;
+		DynamicGroup2(__, __, __): false;
 	}
 }
 

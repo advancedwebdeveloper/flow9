@@ -436,9 +436,8 @@ export {
 
 	DynamicGroupSkipUpdate(
 		combiner : DynamicGroupCombiner,
-		init : [Form],
-		update : DynamicBehaviour<[GroupChange]>,
-		skipUpdate : Behaviour<bool>) -> Form;
+		items : Transform<[Form]>,
+		skipUpdate : Transform<bool>) -> Form;
 }
 
 useLiteEditStyle = ref false;
@@ -2529,36 +2528,7 @@ addTransformMatrixInspector(form : Form) -> FormInspector {
 
 DynamicGroupSkipUpdate(
 	combiner : DynamicGroupCombiner,
-	init : [Form],
-	update : DynamicBehaviour<[GroupChange]>,
-	skipUpdate : Behaviour<bool>) -> Form {
-
-	updateFixed : DynamicBehaviour<[GroupChange]> =
-		make( mapi(init, \i, el -> GroupAdd(el, i)) );
-
-	Constructor(
-		DynamicGroup(updateFixed, combiner),
-		\ -> {
-			unupdate = subscribe(update, \changes ->
-				if (!getValue(skipUpdate)) {
-					iter(changes, \change ->
-						dynArrayPush(updateFixed, change)
-					);
-					next(update, []);
-				}
-			);
-			unskip = subscribe(skipUpdate, \skip ->
-				if (!skip) {
-					iter(getValue(update), \change ->
-						dynArrayPush(updateFixed, change)
-					);
-					next(update, []);
-				}
-			);
-			\ -> {
-				unupdate();
-				unskip();
-			}
-		}
-	);
+	items : Transform<[Form]>,
+	skipUpdate : Transform<bool>) -> Form {
+	DynamicGroup(ftransistor(fnot(skipUpdate), items), combiner);
 }

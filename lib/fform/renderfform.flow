@@ -384,128 +384,47 @@ renderFForm(rform : FForm, zorder : [int]) -> FRenderResult {
 					makeSubscribe(renderable, \r -> setClipRenderable(clip, r))()
 			)
 		}
-		FDynamicGroup2(stackChanges, currentStack, stack) : {
+		FDynamicGroup2(items, stack) : {
 			parentClip = makeClip();
 
 			setClipCallstack(parentClip, stack);
 			setClipDebugInfo(parentClip, "form", rform);
 
-			childDisposers : ref [[() -> void]] = ref [[]];
-			childrenClips : ref [[Pair<native, ref bool>]] = ref [[]];
-			childrenCount : ref [int] = ref [];
+			u = fiteriu(items, \ii, it -> {
+				childResult = renderFForm(it, arrayPush(zorder, fgetValue(ii)));
 
-			handleAdd = \form, z -> {
-				childrenAfter = tailFrom(^childrenClips, z);
+				if (length(childResult.clips) > 0) {
+					clipalive = ref false;
 
-				childResult = renderFForm(form, arrayPush(zorder, z));
-				childClip = map(childResult.clips, \c -> Pair(c, ref false));
-				clipsBefore = length(concatA(subrange(^childrenClips, 0, z)));
-				iteri(childClip, \i, d -> addChildClipAt(parentClip, d.first, clipsBefore + i, d.second));
+					if (length(childResult.clips) == 1) {
+						concat(
+							[
+								makeSubscribe(ii, \i -> addChildClipAt(parentClip, childResult.clips[0], i, clipalive))(),
+								\ -> removeChildClip(parentClip, childResult.clips[0], clipalive)
+							],
+							childResult.disposers
+						);
+					} else {
+						clip = makeClip();
 
-				childrenClips := insertArray(^childrenClips, z, childClip);
-				childDisposers := insertArray(^childDisposers, z, childResult.disposers);
-			};
+						alive = generate(0, length(childResult.clips), \__ -> ref false);
+						iteri(childResult.clips, \i, c -> addChildClip(clip, c, alive[i]));
 
-			handleDelete = \z -> if (existsIndex(^childrenClips, z)) {
-				iter(^childrenClips[z], \clip -> removeChildClip(parentClip, clip.first, clip.second));
-				childrenClips := removeIndex(^childrenClips, z);
-
-				applyall(^childDisposers[z]);
-				childDisposers := removeIndex(^childDisposers, z);
-			}
-
-			handleReplace = \form, z -> {
-				childrenAfter = tailFrom(^childrenClips, z);
-
-				iter(childrenAfter, \children ->
-					iter(children, \child -> removeChildClip(parentClip, child.first, child.second))
-				);
-
-				applyall(^childDisposers[z]);
-
-				childResult = renderFForm(form, arrayPush(zorder, z));
-				childClip = map(childResult.clips, \c -> Pair(c, ref false));
-
-				iter(
-					replace(childrenAfter, 0, childClip),
-					\childClips ->
-						iter(childClips, \clip -> addChildClip(parentClip, clip.first, clip.second))
-				);
-
-				childrenClips := replace(^childrenClips, z, childClip);
-				childDisposers := replace(^childDisposers, z, childResult.disposers);
-			}
-
-			handleMove = \from, to -> {
-				childrenFixedOrder = moveElement(^childrenClips, from, to);
-				childrenChanged = tailFrom(childrenFixedOrder, min(from, to));
-
-				iter(childrenChanged, \children ->
-					iter(children, \child -> removeChildClip(parentClip, child.first, child.second))
-				);
-
-				iter(
-					childrenChanged,
-					\childClips ->
-						iter(childClips, \clip -> addChildClip(parentClip, clip.first, clip.second))
-				);
-
-				childrenClips := childrenFixedOrder;
-				childDisposers := moveElement(^childDisposers, from, to);
-			}
-
-			iteri(getValue(currentStack), \i, f -> handleAdd(f, i));
-
-			handleChanges = \changes -> if (length(changes) > 0) {
-				next(stackChanges, []);
-
-				iter(changes, \change -> {
-					switch (change : FGroupChange) {
-						FGroupAdd(form, z) : {
-							next(currentStack, insertArray(getValue(currentStack), z, form));
-							handleAdd(form, z);
-						}
-						FGroupDelete(z) : {
-							next(currentStack, removeIndex(getValue(currentStack), z));
-							handleDelete(z);
-						}
-						FGroupMove(from, to) : {
-							currentStackValue = getValue(currentStack);
-							toFixed = forceRange(to, 0, length(currentStackValue) - 1);
-
-							if (existsIndex(currentStackValue, from) && from != toFixed) {
-								next(
-									currentStack,
-									moveElement(currentStackValue, from, toFixed)
-								);
-
-								handleMove(from, toFixed);
-							}
-						}
-						FGroupReplace(form, z) : {
-							next(currentStack, replace(getValue(currentStack), z, form));
-							handleReplace(form, z);
-						}
+						concat(
+							[
+								makeSubscribe(ii, \i -> addChildClipAt(parentClip, clip, i, clipalive))(),
+								\ -> removeChildClip(parentClip, clip, clipalive),
+								\ -> iteri(childResult.clips, \i, c -> removeChildClip(clip, c, alive[i]))
+							],
+							childResult.disposers
+						);
 					}
-				});
-			}
+				} else {
+					[nop];
+				}
+			});
 
-			disposeChanges = fsubscribe(stackChanges, handleChanges);
-
-			disposeGroup =
-				\ -> {
-					callList(disposeChanges);
-
-					iter(^childrenClips, \childClips -> iter(childClips, \clip -> removeChildClip(parentClip, clip.first, clip.second)));
-					childrenClips := [];
-
-					iter(^childDisposers, applyall);
-					childDisposers := [];
-
-					deleteNative(parentClip);
-				};
-
-			FRenderResult([parentClip], [disposeGroup], allFClipCapabilities);
+			FRenderResult([parentClip], [u, \ -> deleteNative(parentClip)], allFClipCapabilities);
 		}
 		FGroup(forms, z) : {
 			results : [FRenderResult] = mapi(forms, \i, form -> renderFForm(form, if (z || ^accessibilityEnabled || ^fAccessibilityEnabled) arrayPush(zorder, i) else zorder));

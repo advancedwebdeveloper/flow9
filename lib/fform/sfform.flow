@@ -172,7 +172,7 @@ fform2sfform(fform : FForm, callConstructors : bool) -> SFForm {
 			else
 				FMForm(takeSnapshot(form));
 		}
-		FDynamicGroup2(__, currentStack, __) : SFGroup(map(getValue(currentStack), \l -> fform2sfform(l, callConstructors)), true);
+		FDynamicGroup2(items, __) : SFGroup(map(fgetValue(items), \l -> fform2sfform(l, callConstructors)), true);
 		FVideo(fn, wh, s) : SFVideo(fn, getValue(wh), FVideoStyle2SFVideoStyle(s));
 		FNativeForm(__, __, ff, __): fform2sfform(ff(), callConstructors);
 		FTextInput(c, wh, s) : SFTextInput(getValue(c), getValue(wh), FTextInputStyle2SFTextInputStyle(s));

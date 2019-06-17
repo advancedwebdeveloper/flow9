@@ -209,7 +209,7 @@ optimizeForm(form) {
 		else FullWindow(fs, of);
 	}
 	NativeForm(__, __, __, fn): form;
-	DynamicGroup2(__, __, __, __): form;
+	DynamicGroup2(__, __, __): form;
 	}
 }
 
@@ -429,6 +429,6 @@ availableDependent(f) {
     ControlFocus(focus, form): availableDependent(form);
     FullWindow(fs, form): availableDependent(form);
     NativeForm(init, __, __, fn): false;
-    DynamicGroup2(__, __, __, __): true;
+    DynamicGroup2(__, __, __): true;
 	}
 }

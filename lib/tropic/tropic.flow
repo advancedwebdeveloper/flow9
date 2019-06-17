@@ -458,22 +458,15 @@ TransformTAcc(
 	) -> TAcc
 );
 
-TDynamicGroup2 : (stackChanges : DynamicBehaviour<[TGroupChange]>, currentStack : ref [Tropic], combiner : TCombiner);
-	TGroupChange ::= TGroupAdd, TGroupDelete, TGroupMove, TGroupReplace;
-
-		TGroupAdd : (tropic : Tropic, z : int);
-		TGroupDelete : (z : int);
-		TGroupMove : (from : int, to : int);
-		TGroupReplace : (tropic : Tropic, z : int);
-
+TDynamicGroup2 : (items : Transform<[Tropic]>, combiner : TCombiner);
 	TCombiner ::= TGroupCombiner, TLinesCombiner, TColsCombiner, TColsACombiner;
 		TGroupCombiner();
 		TLinesCombiner();
 		TColsCombiner();
 		TColsACombiner();
 
-TDynamicGroup(stackChanges : DynamicBehaviour<[TGroupChange]>) -> TDynamicGroup2 {
-	TDynamicGroup2(stackChanges, ref [], TGroupCombiner());
+TDynamicGroup(items : Transform<[Tropic]>) -> TDynamicGroup2 {
+	TDynamicGroup2(items, TGroupCombiner());
 }
 
 	tropicFillersMax = ref 4096.;

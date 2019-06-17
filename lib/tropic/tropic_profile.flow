@@ -164,7 +164,7 @@ sizeTropic(t : Tropic) -> int {
 		TSizeOf(tr): 1 + sizeTropic(tr);
 		TRealHTML(__, __, __): 1;
 		TVideo(__, __, __): 1;
-		TDynamicGroup2(__, cs, __): sizeTropic(TGroup(^cs));
+		TDynamicGroup2(items, __): sizeTropic(TGroup(fgetValue(items)));
 		TPositionScale(__, tr): 1 + sizeTropic(tr);
 		TInspect(__, tr): 1 + sizeTropic(tr);
 		TOverride(__, tr): 1 + sizeTropic(tr);
@@ -265,7 +265,7 @@ commonTropic(t : Tropic, acc : Tree<Tropic, int>) -> Tree<Tropic, int> {
 		TSFForm(__, __): acc2;
 		TFillX(): acc2;
 		TFillY(): acc2;
-		TDynamicGroup2(__, cs, __): fold(^cs, acc2, \acc3, c -> commonTropic(c, acc3));
+		TDynamicGroup2(items, __): fold(fgetValue(items), acc2, \acc3, c -> commonTropic(c, acc3));
 		TInspect(__, tr): commonTropic(tr, acc2);
 		TOverride(__, tr): commonTropic(tr, acc2);
 	}
@@ -366,7 +366,7 @@ containsTropic(small : Tropic, big : Tropic) -> bool {
 			TSFForm(__, __): false;
 			TFillX(): false;
 			TFillY(): false;
-			TDynamicGroup2(__, cs, __): fold(^cs, false, \acc, c -> acc || containsTropic(small, c));
+			TDynamicGroup2(items, __): fold(fgetValue(items), false, \acc, c -> acc || containsTropic(small, c));
 		}
 	}
 }

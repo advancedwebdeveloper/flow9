@@ -717,6 +717,6 @@ FindForm(srcForm : Form, onFind:(f: Form) -> bool) -> Maybe<Form> {
 		ControlFocus(focus, form): findTwoForm(form);
 		FullWindow(fs, form): findTwoForm(form);
 		NativeForm(__, __, __, fn): findOneForm();
-		DynamicGroup2(__, __, __, __) : findOneForm(); // Placeholder
+		DynamicGroup2(__, __, __) : findOneForm(); // Placeholder
 	}
 }

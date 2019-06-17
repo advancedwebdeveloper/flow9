@@ -24,7 +24,7 @@ export {
 		ISAccess : (id : List<IScriptIdentifier>, form : IScriptForm);
 		ISFullWindow : (fullscreen : bool, available : WidthHeight, form : IScriptForm);
 		ISSetPending : (pending : int, form : IScriptForm);
-		ISDynamicGroup2(stackChanges : [FGroupChange], currentStack : [IScriptForm]);
+		ISDynamicGroup2(items : [IScriptForm]);
 		ISMForm : (form : PForm);
 
 	takeLogicalSnapshot(f : FForm) -> IScriptForm;
@@ -135,7 +135,7 @@ takeLogicalSnapshot(f : FForm) -> IScriptForm {
 					}
 				})
 			);
-		FDynamicGroup2(stackChanges, currentStack, stack): ISDynamicGroup2(_ct(stackChanges), map(_ct(currentStack), takeLogicalSnapshot));
+		FDynamicGroup2(items, stack): ISDynamicGroup2(map(_ct(items), takeLogicalSnapshot));
 		FVideo(url, wh, style):
 			FVideo(
 				url,
@@ -209,8 +209,8 @@ IScriptForm2FForm(manager : MaterialManager, f : IScriptForm, m2t : (Material, M
 			IScriptForm2FForm(manager, form, m2t, id, inputs));
 		ISAccess(tabOrder, form) :
 			IScriptForm2FForm(manager, form, m2t, concatList(tabOrder, Cons(IScriptFormPosition(0), makeList())), inputs);
-		ISDynamicGroup2(stackChanges, currentStack):
-			FDynamicGroup2(make(stackChanges), make(map(currentStack, \cs -> IScriptForm2FForm(manager, cs, m2t, id, inputs))), captureCallstack());
+		ISDynamicGroup2(items):
+			FDynamicGroup2(const(map(items, \cs -> IScriptForm2FForm(manager, cs, m2t, id, inputs))), captureCallstack());
 		ISMForm(form) : FMForm(form |> pForm2Form);
 		FParagraph(text, style): f; //TODO:
 		FText(textT, characterStyle): {
@@ -394,8 +394,8 @@ IScriptForm2FForm(manager : MaterialManager, f : IScriptForm, m2t : (Material, M
 			IScriptForm2FForm(manager, form, m2t, id, inputs));
 		FFullWindow(fw, av, form): FFullWindow(fw, av,
 			IScriptForm2FForm(manager, form, m2t, id, inputs));
-		FDynamicGroup2(stackChanges, currentStack, stack):
-			FDynamicGroup2(stackChanges, make(map(getValue(currentStack), \cs -> IScriptForm2FForm(manager, cs, m2t, id, inputs))), stack);
+		FDynamicGroup2(items, stack):
+			FDynamicGroup2(fmap(items, \cs -> IScriptForm2FForm(manager, cs, m2t, id, inputs)), stack);
 		FRealHTML(__, __, __): f;
 		FVideo(__, __, __): f;
 		FTextInput(__, __, __): f;

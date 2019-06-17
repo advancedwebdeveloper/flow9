@@ -359,7 +359,7 @@ optimizeTropic(t : Tropic) -> Tropic {
 			ot = optimizeTropic(tr);
 			if (ot == tr) t else TPositionScale(p, ot);
 		};
-		TDynamicGroup2(__, __, __) : t;
+		TDynamicGroup2(__, __) : t;
 		TInspect(inspectors, tr) : {
 			ot = optimizeTropic(tr);
 			if (length(inspectors) == 0) ot

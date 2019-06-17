@@ -655,15 +655,10 @@ AvoidMediaCacheRequest() -> bool;
 setAvoidMediaCacheRequest(avoidCache: bool) -> void;
 
 DynamicGroup2(
-	stackChanges : DynamicBehaviour<[GroupChange]>,
+	items : Transform<[Form]>,
 	combiner : DynamicGroupCombiner,
-	currentStack : DynamicBehaviour<[Form]>,
 	stack : native
 );
-	GroupChange ::= GroupAdd, GroupDelete, GroupMove;
-		GroupAdd : (form : Form, z : int);
-		GroupDelete : (z : int);
-		GroupMove : (from : int, to : int);
 
 	DynamicGroupCombiner ::= LinesCombiner, ColsCombiner, GroupCombiner;
 		LinesCombiner : ();
@@ -671,10 +666,10 @@ DynamicGroup2(
 		GroupCombiner : ();
 
 DynamicGroup(
-	stackChanges : DynamicBehaviour<[GroupChange]>,
-	combiner : DynamicGroupCombiner) -> DynamicGroup2 {
-
-	DynamicGroup2(stackChanges, combiner, make([]), captureCallstack());
+	items : Transform<[Form]>,
+	combiner : DynamicGroupCombiner
+) -> DynamicGroup2 {
+	DynamicGroup2(items, combiner, captureCallstack());
 }
 
 }

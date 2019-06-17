@@ -19,7 +19,7 @@ isStaticFForm(fform : FForm) -> bool {
 		FRealHTML(__, wh, __) : isFConst(wh);
 		FParagraph(__, style) : false; // TODO:
 		FPicture(__, __, __) : false;
-		FDynamicGroup2(__, __, __) : false;
+		FDynamicGroup2(__, __) : false;
 		FVideo(__, __, __) : false;
 		FTextInput(__, __, __) : false;
 		FNativeForm(__, __, __, __) : false;
@@ -84,8 +84,8 @@ findTaggedFFormPositionScale(f : FForm, tag : int) -> Maybe<PositionScale> {
 		FGroup2(layer1, layer2, __) : eitherFn(ftfps(layer1), \ps -> Some(ps), \ -> ftfps(layer2));
 		FDecorator2(layer1, decorators, __, __) : eitherFn(ftfps(layer1), \ps -> Some(ps), \ ->
 			foldWhile2(decorators, None(), \__, d -> eitherMap(ftfps(d.second()), \ps -> Pair(Some(ps), true), Pair(None(), false))));
-		FDynamicGroup2(__, currentStack, __) :
-			foldWhile2(getValue(currentStack), None(), \__, l -> eitherMap(ftfps(l), \ps -> Pair(Some(ps), true), Pair(None(), false)));
+		FDynamicGroup2(items, __) :
+			foldWhile2(fgetValue(items), None(), \__, l -> eitherMap(ftfps(l), \ps -> Pair(Some(ps), true), Pair(None(), false)));
 
 		FRotate(__, form) : ftfps(form); // TODO:
 		FAlpha(__, form) : ftfps(form);
@@ -138,7 +138,7 @@ takeFSnapshot(fform : FForm) -> FForm {
 		FRealHTML(url, wh, style) : FRealHTML(url, _d2c(wh), style);
 		FParagraph(text, style) : FParagraphSnapshot(text, style);
 		FPicture(url, sz, st) : FPictureSnapshot(url, sz, st);
-		FDynamicGroup2(sc, cs, stack) : FDynamicGroup2(make([]), make(map(fgetValue(cs), tfs)), stack);
+		FDynamicGroup2(items, stack) : FDynamicGroup2(const(map(fgetValue(items), tfs)), stack);
 		FVideo(f, wh, st) : FVideoSnapshot(f, wh, st);
 		FTextInput(c, wh, st) : FTextInputSnapshot(c, wh, st);
 

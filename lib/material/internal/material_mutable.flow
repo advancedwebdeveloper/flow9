@@ -350,29 +350,7 @@ MRenderOnce2T(manager : MaterialManager, parent : MFocusGroup, condition : Trans
 }
 
 MDynamicGroup2T(manager : MaterialManager, parent : MFocusGroup, m : MDynamicGroup2, m2t : (Material, MFocusGroup) -> Tropic) -> Tropic {
-	tStackChanges = make([]);
-
-	TConstruct(
-		[
-			makeSubscribe(m.stackChanges, \grc : [MGroupChange] ->
-				nextDistinct(
-					tStackChanges,
-					concat(
-						getValue(tStackChanges),
-						map(grc, \g ->
-							switch (g : MGroupChange) {
-								MGroupAdd(mat, z) : TGroupAdd(m2t(mat, parent), z);
-								MGroupDelete(z) : TGroupDelete(z);
-								MGroupMove(f, t) : TGroupMove(f, t);
-								MGroupReplace(mat, z) : TGroupReplace(m2t(mat, parent), z);
-							}
-						)
-					)
-				)
-			)
-		],
-		TDynamicGroup2(tStackChanges, ref map(^(m.currentStack), \mat -> m2t(mat, parent)), m.combiner)
-	)
+	TDynamicGroup2(fmap(m.items, \mat -> m2t(mat, parent)), m.combiner)
 }
 
 extractMComponentGroupState(state : [flow]) -> [MComponentGroupState] {

@@ -5,6 +5,7 @@ import form/optimizeform;
 import sys/fullscreen;
 import formats/html/html2text;
 import sys/interactive;
+import fusion_utils;
 
 export {
 	// Render the given form on the screen
@@ -1704,263 +1705,74 @@ renderForm(rform : Form, available : Behaviour<WidthHeight>, zorder : [int], tab
 			ClipCapabilities(false, false, false, false, false)
 		);
 	}
-	DynamicGroup2(stackChanges, combiner, currentStack, stack) : {
+	DynamicGroup2(items, combiner, stack) : {
 		parentClip = makeClip();
 
 		setClipCallstack(parentClip, stack);
 		setClipDebugInfo(parentClip, "form", rform);
 
-		childItems : DynamicBehaviour<[DynamicGroupItem]> = make([]);
+		formItems =
+			fmapi(items, \i, it -> renderForm(it, available, arrayPush(zorder, i), arrayPush(tabOrder, i)))
+			|> (\formItems -> fmapu(formItems, \it -> Pair(it, it.disposers)))
+			|> (\formItems ->
+				ffoldi(formItems, zeroDynamicGroupAcc, \i, acc, it -> {
+					if (length(it.clips) == 1) {
+						addChildAt(parentClip, it.clips[0], i);
 
-		handleAdd = \form : Form, z : int -> {
-			itemIndex : DynamicBehaviour<int> =
-				make(z);
-
-			itemPosition : DynamicBehaviour<double> =
-				make(0.0);
-
-			childrenAfter : [DynamicGroupItem] =
-				tailFrom(getValue(childItems), z);
-
-			iter(childrenAfter, \item : DynamicGroupItem ->
-				iter(item.renderResult.clips, \child ->
-					removeChild(parentClip, child)
-				)
-			);
-
-			childResult : RenderResult =
-				renderForm(
-					if (combiner == LinesCombiner() || combiner == ColsCombiner()) {
-
-						previousItem : Disposable<Behaviour<DynamicGroupItem>> =
-							select2u(childItems, itemIndex, \ti, i ->
-								elementAt(ti, i - 1, zeroDynamicGroupItem)
+						DynamicGroupAcc(
+							fselect2(acc.widthHeight, it.widthHeight, FLift2(\v1, v2 ->
+								WidthHeight(
+									if (combiner == ColsCombiner())
+										v1 + v2
+									else
+										max(v1, v2),
+									if (combiner == LinesCombiner())
+										v1 + v2
+									else
+										max(v1, v2)
+								)
+							)),
+							fmax(acc.baseline, it.baseline),
+							fadditioni(acc.pending, it.pending),
+							concat(
+								acc.disposers,
+								if (combiner == ColsCombiner() || combiner == LinesCombiner())
+									[
+										makeSubscribe(acc.widthHeight, \wh ->
+											if (combiner == ColsCombiner())
+												setClipX(it.clips[0], wh.width)
+											else
+												setClipY(it.clips[0], wh.height)
+										)(),
+										\ -> removeChild(parentClip, it.clips[0])
+									]
+								else
+									[
+										\ -> removeChild(parentClip, it.clips[0])
+									]
 							)
-								|> toDisposable;
-
-						previousItemPosition : Disposable<Behaviour<double>> =
-							subselectSafe(
-								previousItem.value,
-								\prevItem ->
-									positionDynamicGroupItem(
-										prevItem,
-										combiner
-									)
-							);
-
-						Constructor(
-							Translate(
-								if (combiner == ColsCombiner()) {
-									itemPosition;
-								} else {
-									const(0.0);
-								},
-								if (combiner == LinesCombiner()) {
-									itemPosition;
-								} else {
-									const(0.0);
-								},
-								form
-							),
-							\ -> {
-								disconnect : () -> void =
-									connect(
-										previousItemPosition.value,
-										itemPosition
-									);
-								\ -> {
-									disconnect();
-									previousItemPosition.dispose();
-									previousItem.dispose();
-								}
-							}
-						)
-					} else {
-						form;
-					},
-					available,
-					arrayPush(zorder, z),
-					arrayPush(tabOrder, z)
-				);
-
-			childItem : DynamicGroupItem =
-				DynamicGroupItem(
-					childResult,
-					itemIndex,
-					itemPosition
-				);
-
-			iter(
-				concat([childItem], childrenAfter),
-				\item : DynamicGroupItem ->
-					iter(item.renderResult.clips, \clip ->
-						addChild(parentClip, clip)
-					)
-			);
-
-			next(
-				childItems,
-				insertArray(
-					getValue(childItems),
-					z,
-					childItem
-				)
-			);
-
-			iteri(
-				tailFrom(getValue(childItems), z + 1),
-				\i, item -> next(item.index, i + z + 1)
-			);
-		};
-
-		handleDelete = \z : int -> if (existsIndex( getValue(childItems), z )) {
-
-			iter(
-				( getValue(childItems)[z] ).renderResult.clips,
-				\clip -> removeChild(parentClip, clip)
-			);
-
-			applyall(
-				( getValue(childItems)[z] ).renderResult.disposers
-			);
-
-			iteri(
-				tailFrom(getValue(childItems), z + 1),
-				\i, item -> next(item.index, i + z)
-			);
-
-			next(
-				childItems,
-				removeIndex( getValue(childItems), z )
-			);
-		}
-
-		handleMove = \from, to -> {
-			toFixed = forceRange(to, 0, length( getValue(childItems) ) - 1);
-
-			if (existsIndex(getValue(childItems), from) && from != toFixed) {
-				childrenFixedOrder : [DynamicGroupItem] =
-					moveElement( getValue(childItems), from, toFixed );
-
-				childrenChanged : [DynamicGroupItem] =
-					tailFrom(childrenFixedOrder, min(from, toFixed));
-
-				iter(childrenChanged, \item : DynamicGroupItem->
-					iter(item.renderResult.clips, \clip ->
-						removeChild(parentClip, clip)
-					)
-				);
-
-				iter(childrenChanged, \item : DynamicGroupItem->
-					iter(item.renderResult.clips, \clip ->
-						addChild(parentClip, clip)
-					)
-				);
-
-				next(childItems, childrenFixedOrder);
-
-				iteri(
-					getValue(childItems),
-					\index, item ->
-						nextDistinct(item.index, index)
-				);
-			}
-		}
-
-		iteri(getValue(currentStack), \i, f -> handleAdd(f, i));
-
-		handleChange = \change : GroupChange ->
-			switch (change : GroupChange) {
-				GroupAdd(form, z) : {
-					next(currentStack, insertArray(getValue(currentStack), z, form));
-					handleAdd(form, z);
-				}
-				GroupDelete(z) : {
-					next(currentStack, removeIndex(getValue(currentStack), z));
-					handleDelete(z);
-				}
-				GroupMove(from, to) : {
-					currentStackValue = getValue(currentStack);
-					toFixed = forceRange(to, 0, length(currentStackValue) - 1);
-
-					if (existsIndex(currentStackValue, from) && from != toFixed) {
-						next(
-							currentStack,
-							moveElement(currentStackValue, from, toFixed)
 						);
-
-						handleMove(from, toFixed);
+					} else {
+						acc;
 					}
-				}
-			};
-
-		unchange =
-			subscribe(stackChanges, \changes -> {
-				iter(changes, handleChange);
-				nextDistinct(stackChanges, []);
-			});
-
-		whu : Disposable<Behaviour<WidthHeight>> =
-			subselectArray(
-				childItems,
-				\item : DynamicGroupItem ->
-					item.renderResult.widthHeight,
-				\whs : [Behaviour<WidthHeight>] ->
-					selectMergeu(whs, zeroSize, \rwh, lwh ->
-						WidthHeight(
-							max(rwh.width, lwh.width),
-							max(rwh.height, lwh.height)
-						)
-					)
+				})
 			);
 
-		widthHeight : Disposable<Behaviour<WidthHeight>> =
-			whenSizeChangedu(whu.value)
-				|> toDisposable;
-
-		baseline : Disposable<Behaviour<double>> =
-			subselectArray(
-				childItems,
-				\item -> item.renderResult.baseline,
-				arrayMaxu
-			);
-
-		pending : Disposable<Behaviour<int>> =
-			subselectArray(
-				childItems,
-				\item -> item.renderResult.pending,
-				arrayISumu
-			);
-
-		disposeGroup =
-			\ -> {
-				unchange();
-				whu.dispose();
-				widthHeight.dispose();
-				baseline.dispose();
-				pending.dispose();
-
-				iter(getValue(childItems), \item ->
-					iter(item.renderResult.clips,
-						\clip -> removeChild(parentClip, clip)
-					)
-				);
-
-				iter(
-					getValue(childItems),
-					\item -> applyall(item.renderResult.disposers)
-				);
-				next(childItems, []);
-
-				deleteNative(parentClip);
-			};
+		widthHeight = makeWH();
+		baseline = make(0.0);
+		pending = make(0);
 
 		RenderResult(
 			[parentClip],
-			widthHeight.value,
-			baseline.value,
-			pending.value,
-			[disposeGroup],
+			widthHeight,
+			baseline,
+			pending,
+			[
+				fconnect(fsubselect(formItems, FLift(\fi -> fi.widthHeight)), widthHeight),
+				fconnect(fsubselect(formItems, FLift(\fi -> fi.baseline)), baseline),
+				fconnect(fsubselect(formItems, FLift(\fi -> fi.pending)), pending),
+				makeSubscribe(fmapu(fselect(formItems, FLift(\fi -> fi.disposers)), \it -> Pair(it, [it])), nop1)()
+			],
 			allClipCapabilities
 		);
 	}
@@ -1969,72 +1781,14 @@ renderForm(rform : Form, available : Behaviour<WidthHeight>, zorder : [int], tab
 	res;
 }
 
-toDisposable(
-	pair : Pair<?, () -> void>) -> Disposable<?> {
-
-	Disposable(pair.first, pair.second);
-}
-
-DynamicGroupItem : (
-	renderResult : RenderResult,
-	index : DynamicBehaviour<int>,
-	position : DynamicBehaviour<double>
+DynamicGroupAcc(
+	widthHeight : Transform<WidthHeight>,
+	baseline : Transform<double>,
+	pending : Transform<int>,
+	disposers : [() -> void]
 );
 
-zeroDynamicGroupItem : DynamicGroupItem =
-	DynamicGroupItem(emptyRenderResult, make(0), make(0.0));
-
-positionDynamicGroupItem(
-	previousItem : DynamicGroupItem,
-	combiner : DynamicGroupCombiner) -> Disposable<Behaviour<double>> {
-
-	select2u(
-		previousItem.position,
-		previousItem.renderResult.widthHeight,
-		if (combiner == LinesCombiner()) {
-			\pos : double, metrics : WidthHeight ->
-				pos + metrics.height;
-		} else {
-			\pos : double, metrics : WidthHeight ->
-				pos + metrics.width;
-		}
-	)
-		|> toDisposable;
-}
-
-subselectArray(
-	array : Behaviour<[?]>,
-	key : (?) -> Behaviour<??>,
-	combine : ([Behaviour<??>]) -> Pair<Behaviour<??>, () -> void>
-) -> Disposable<Behaviour<??>> {
-	subselectSafe(array, \a ->
-		combine( map(a, key) )
-			|> toDisposable
-	);
-}
-
-subselectSafe(
-	b : Behaviour<?>,
-	f : (?) -> Disposable<Behaviour<??>>
-) -> Disposable<Behaviour<??>> {
-	firstBehaviour = f(getValue(b));
-	result = make( getValue( firstBehaviour.value ) );
-	disconnect = ref connect(firstBehaviour.value, result);
-	unsub = ref firstBehaviour.dispose;
-	unsub2 =
-		subscribe2(b, \v -> {
-			^unsub();
-			^disconnect();
-			mapped = f(v);
-			disconnect := connect(mapped.value, result);
-			unsub := mapped.dispose;
-		});
-	Disposable(result, \ -> {
-		unsub2();
-		^unsub();
-		^disconnect();
-	})
-}
+zeroDynamicGroupAcc = DynamicGroupAcc(const(zeroWH), zero, const(0), []);
 
 // This is basically htmlEscape, but it wouldn't be good to import formats/wiki/wikiwiki here
 htmlEscapeStr(str) strReplace(strReplace(strReplace(str, "&", "&amp;"), "<", "&lt;"), ">", "&gt;");

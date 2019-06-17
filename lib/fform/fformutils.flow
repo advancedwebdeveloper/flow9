@@ -52,14 +52,8 @@ addChildClip(parent : native, child : native, alive : ref bool) -> void {
 }
 
 addChildClipAt(parent : native, child : native, id : int, alive : ref bool) -> void {
-	if (!^alive) {
-		alive := true;
-		addChildAt(parent, child, id);
-	} else if (isUrlParameterTrue("dev")) {
-		println("Warning: Double construct");
-		printCallstack();
-		println("---");
-	}
+	alive := true;
+	addChildAt(parent, child, id);
 }
 
 removeChildClip(parent : native, child : native, alive : ref bool) -> void {
@@ -104,7 +98,7 @@ switchTransform2(tr : Transform<?>, convertFn : (?) -> (??), fn : (b : Behaviour
 
 isConvertableForm(form : Form) -> bool {
 	switch (form : Form) {
-		DynamicGroup2(__, combiner, __, __): combiner == GroupCombiner();
+		DynamicGroup2(__, combiner, __): combiner == GroupCombiner();
 		Grid(__): false;
 		Camera(__, __, __, __): false;
 		default: true;
@@ -168,7 +162,7 @@ fform2form(fform : FForm) -> Form {
 		FSetPending(setpending, form) : switchTransform(setpending, \sp -> SetPending(sp, fform2form(form)));
 		FRealHTML(url, wh, style) : switchTransform(wh, \whB -> RealHTML2(url, whB, style));
 		FMForm(form) : form;
-		FDynamicGroup2(__, __, __) : FDynamicGroup2DynamicGroup(fform) |> (\f -> Constructor(f.first, f.second));
+		FDynamicGroup2(__, __) : FDynamicGroup2DynamicGroup(fform);
 		FVideo(__, __, __) : FVideo2Video(fform) |> (\f -> Constructor(f.first, f.second));
 		FNativeForm(init, metrics, ff, fn): NativeForm(init, metrics, \ -> fform2form(ff()), fn);
 		FTextInput(__, __, __) : FTextInput2TextInput(fform) |> (\f -> Constructor(f.first, f.second));
@@ -211,9 +205,9 @@ form2fform(_form : Form) -> FForm {
 		Switch(val, cases) : FMutable(fselect(val, FLift(\v -> form2fform(cases[v]))));
 		NativeForm(init, metrics, f, fn) : FNativeForm(init, metrics, \ -> form2fform(f()), fn);
 		Grid(cells) : FMForm(_form); // TODO:
-		DynamicGroup2(__, __, __, __) : {
+		DynamicGroup2(__, __, __) : {
 			if (isConvertableForm(_form))
-				DynamicGroup2FDynamicGroup(_form) |> (\f -> FConstructor(f.first, f.second))
+				DynamicGroup2FDynamicGroup(_form)
 			else
 				FMForm(_form);
 		}
@@ -709,47 +703,12 @@ style2characterStyle(s : [?]) -> [CharacterStyle] {
 	))
 }
 
-FDynamicGroup2DynamicGroup(group : FDynamicGroup2) -> Pair<DynamicGroup2, () -> () -> void> {
-	formChanges : DynamicBehaviour<[GroupChange]> = make([]);
-
-	Pair(
-		DynamicGroup2(formChanges, GroupCombiner(), make(map(getValue(group.currentStack), \cs -> fform2form(cs))), group.stack),
-		makeSubscribe(group.stackChanges, \changes -> {
-			recentChanges : [GroupChange] =
-				fold(changes, [], \acc, change -> {
-					switch (change : FGroupChange) {
-						FGroupAdd(f, z) : arrayPush(acc, GroupAdd(fform2form(f), z));
-						FGroupDelete(z) : arrayPush(acc, GroupDelete(z));
-						FGroupMove(f, t) : arrayPush(acc, GroupMove(f, t));
-						FGroupReplace(f, z) : concat(acc, [GroupDelete(z), GroupAdd(fform2form(f), z)]);
-					}
-				});
-
-			nextDistinct(group.stackChanges, []);
-			next(formChanges, recentChanges);
-		})
-	)
+FDynamicGroup2DynamicGroup(group : FDynamicGroup2) -> DynamicGroup2 {
+	DynamicGroup2(fmap(group.items, \it -> fform2form(it)), GroupCombiner(), group.stack);
 }
 
-DynamicGroup2FDynamicGroup(group : DynamicGroup2) -> Pair<FDynamicGroup2, () -> () -> void> { // TODO:
-	fformChanges : DynamicBehaviour<[FGroupChange]> = make([]);
-
-	Pair(
-		FDynamicGroup2(fformChanges, make(map(getValue(group.currentStack), \cs -> form2fform(cs))), group.stack),
-		makeSubscribe(group.stackChanges, \changes -> {
-			recentChanges : [FGroupChange] =
-				fold(changes, [], \acc, change -> {
-					switch (change : GroupChange) {
-						GroupAdd(f, z) : arrayPush(acc, FGroupAdd(form2fform(f), z));
-						GroupDelete(z) : arrayPush(acc, FGroupDelete(z));
-						GroupMove(f, t) : arrayPush(acc, FGroupMove(f, t));
-					}
-				});
-
-			nextDistinct(group.stackChanges, []);
-			next(fformChanges, recentChanges);
-		})
-	)
+DynamicGroup2FDynamicGroup(group : DynamicGroup2) -> FDynamicGroup2 { // TODO:
+	FDynamicGroup2(fmap(group.items, \it -> form2fform(it)), group.stack);
 }
 
 // form2FNativeForm(form : Form) -> FNativeForm {
@@ -1188,9 +1147,9 @@ fform2s(rform : FForm, level : int) -> string {
 			fform2s(form, level + 1) + "\n" +
 			generateSpaces + ")"
 		}
-		FDynamicGroup2(stackChanges, currentStack, stack) : {
+		FDynamicGroup2(items, stack) : {
 			generateSpaces + structName + "[" + "\n" +
-			concatStrings(map(fgetValue(currentStack), \cs -> fform2s(cs, level + 1) + "," + "\n")) +
+			concatStrings(map(fgetValue(items), \cs -> fform2s(cs, level + 1) + "," + "\n")) +
 			generateSpaces + "])"
 		}
 		FGroup(forms, z) : {

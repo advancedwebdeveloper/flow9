@@ -66,25 +66,7 @@ fform2tropic(f : FForm) -> Tropic {
 		FSetPending(setpending, form) : fform2tropic(form);
 		FRealHTML(url, wh, style) : TRealHTML(url, wh, style);
 		FMForm(form) : TForm(form);
-		FDynamicGroup2(stackChanges, currentStack, callstack) : {
-			tStackChanges = make([]);
-			TConstruct(
-				[
-					\ -> fconnect(
-						fmap(stackChanges, \sc ->
-							switch (sc : FGroupChange) {
-								FGroupAdd(form, z) : TGroupAdd(fform2tropic(form), z);
-								FGroupDelete(z) : TGroupDelete(z);
-								FGroupMove(from, to) : TGroupMove(from, to);
-								FGroupReplace(form, z) : TGroupReplace(fform2tropic(form), z);
-							}
-						),
-						tStackChanges
-					)
-				],
-				TDynamicGroup2(tStackChanges, ref map(getValue(currentStack), fform2tropic), TGroupCombiner())
-			);
-		}
+		FDynamicGroup2(items, callstack) : TDynamicGroup2(fmap(items, fform2tropic), TGroupCombiner());
 		FVideo(filename, wh, style) : TVideo(filename, wh, style);
 		FTextInput(__, __, __) : TEmpty(); // TODO:
 		FNativeForm(init, __, __, __) : cast(init : flow -> Tropic);

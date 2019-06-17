@@ -8,12 +8,15 @@ export {
 	fmapi(a : Transform<[??]>, fn : (int, ??) -> ?) -> Transform<[?]>;
 	fmapiu(a : Transform<[??]>, fn : (Transform<int>, ??) -> Pair<?, [() -> void]>) -> Transform<[?]>;
 
+	fmapWithPrevious(a : Transform<[??]>, first : (??) -> ?, rest : (??, ??) -> ?) -> Transform<[?]>;
+
 	fiteriu(a : Transform<[??]>, fn : (Transform<int>, ??) -> [() -> void]) -> () -> void;
 
 	fsubmap(a : Transform<[??]>, fn : (??) -> Transform<?>) -> Transform<[?]>;
 	fsubmapi(a : Transform<[??]>, fn : (Transform<int>, ??) -> Transform<?>) -> Transform<[?]>;
 
 	ffold(a : Transform<[??]>, def : ?, fn : (?, ??) -> ?) -> Transform<?>;
+	ffoldi(a : Transform<[??]>, def : ?, fn : (int, ?, ??) -> ?) -> Transform<?>;
 
 	ffilter(a : Transform<[?]>, fn : (?) -> bool) -> Transform<[?]>;
 	ffiltermap(a : Transform<[??]>, fn : (??) -> Maybe<?>) -> Transform<[?]>;
@@ -120,9 +123,12 @@ fmap(a : Transform<[??]>, fn : (??) -> ?) -> Transform<[?]> {
 		output = ref [];
 
 		fselect(a, FLift(\a0 -> {
-			iter(arrayDiff(^input, a0, false), \op ->
-				switch (op : ArrayOperation) {
+			iter(arrayDiffWithSwap(^input, a0, false), \op ->
+				switch (op : ArrayOperationWithSwap) {
 					ArrayNop(__, __): {}
+					ArraySwap(x, y, __): {
+						output := moveElement(^output, x, y + 1);
+					}
 					ArrayInsert(x, __, v): {
 						output := insertArray(^output, x, fn(v));
 					}
@@ -156,10 +162,17 @@ fmapu(a : Transform<[??]>, fn : (??) -> Pair<?, [() -> void]>) -> Transform<[?]>
 					nested := true;
 
 					// Call disposers before initializers
-					filtermap(arrayDiff(^input, a0, false), \op ->
-						switch (op : ArrayOperation) {
+					filtermap(arrayDiffWithSwap(^input, a0, false), \op ->
+						switch (op : ArrayOperationWithSwap) {
 							ArrayNop(x, y): {
 								None();
+							}
+							ArraySwap(x, y, __): {
+								disposers := moveElement(^disposers, x, y + 1);
+
+								Some(\ -> {
+									output := moveElement(^output, x, y + 1);
+								})
 							}
 							ArrayInsert(x, y, v): {
 								disposers := insertArray(^disposers, x, []);
@@ -225,12 +238,16 @@ fmapi(a : Transform<[??]>, fn : (int, ??) -> ?) -> Transform<[?]> {
 		output = ref [];
 
 		fselect(a, FLift(\a0 -> {
-			iter(arrayDiff(^input, a0, true), \op -> {
-				switch (op : ArrayOperation) {
+			iter(arrayDiffWithSwap(^input, a0, true), \op -> {
+				switch (op : ArrayOperationWithSwap) {
 					ArrayNop(x, y): {
 						if (x != y) {
 							output := replace(^output, x, fn(y, ^input[x]));
 						}
+					}
+					ArraySwap(x, y, __): {
+						output := replace(^output, y + 1, fn(y + 1, ^input[x]));
+						output := replace(^output, x, fn(x, ^input[y + 1]));
 					}
 					ArrayInsert(x, y, v): {
 						output := insertArray(^output, x, fn(y, v));
@@ -266,8 +283,8 @@ fmapiu(a : Transform<[??]>, fn : (Transform<int>, ??) -> Pair<?, [() -> void]>) 
 					nested := true;
 
 					// Call disposers before initializers
-					filtermap(arrayDiff(^input, a0, true), \op ->
-						switch (op : ArrayOperation) {
+					filtermap(arrayDiffWithSwap(^input, a0, true), \op ->
+						switch (op : ArrayOperationWithSwap) {
 							ArrayNop(x, y): {
 								if (x != y) {
 									Some(\ -> {
@@ -276,6 +293,17 @@ fmapiu(a : Transform<[??]>, fn : (Transform<int>, ??) -> Pair<?, [() -> void]>) 
 								} else {
 									None();
 								}
+							}
+							ArraySwap(x, y, __): {
+								disposers := moveElement(^disposers, x, y + 1);
+
+								Some(\ -> {
+									indexes := moveElement(^indexes, x, y + 1);
+									output := moveElement(^output, x, y + 1);
+
+									nextDistinct(^indexes[x], y + 1);
+									nextDistinct(^indexes[y + 1], x);
+								})
 							}
 							ArrayInsert(x, y, v): {
 								disposers := insertArray(^disposers, x, []);
@@ -339,6 +367,18 @@ fmapiu(a : Transform<[??]>, fn : (Transform<int>, ??) -> Pair<?, [() -> void]>) 
 	}
 }
 
+fmapWithPrevious(a : Transform<[??]>, first : (??) -> ?, rest : (??, ??) -> ?) -> Transform<[?]> {
+	if (isFConst(a)) {
+		const(mapWithPrevious(fgetValue(a), first, rest));
+	} else {
+		feitherMap(
+			ffold(a, None(), \accM, v -> Some(Pair(v, eitherFn(accM, \acc -> arrayPush(acc.second, rest(acc.first, v)), \ -> [first(v)])))),
+			\r -> r.second,
+			const([])
+		);
+	}
+}
+
 fiteriu(a : Transform<[??]>, fn : (Transform<int>, ??) -> [() -> void]) -> () -> void {
 	makeSubscribe(fmapiu(a, \i, v -> Pair(false, fn(i, v))), nop1)();
 }
@@ -361,8 +401,8 @@ fsubmap(a : Transform<[??]>, fn : (??) -> Transform<?>) -> Transform<[?]> {
 					newOutput = ref getValue(output);
 
 					// Call disposers before initializers
-					filtermap(arrayDiff(^input, a0, true), \op ->
-						switch (op : ArrayOperation) {
+					filtermap(arrayDiffWithSwap(^input, a0, true), \op ->
+						switch (op : ArrayOperationWithSwap) {
 							ArrayNop(x, y): {
 								if (x != y) {
 									Some(\ -> {
@@ -371,6 +411,17 @@ fsubmap(a : Transform<[??]>, fn : (??) -> Transform<?>) -> Transform<[?]> {
 								} else {
 									None();
 								}
+							}
+							ArraySwap(x, y, __): {
+								disposers := moveElement(^disposers, x, y + 1);
+
+								Some(\ -> {
+									indexes := moveElement(^indexes, x, y + 1);
+									newOutput := moveElement(^newOutput, x, y + 1);
+
+									nextDistinct(^indexes[x], y + 1);
+									nextDistinct(^indexes[y + 1], x);
+								})
 							}
 							ArrayInsert(x, y, v): {
 								disposers := insertArray(^disposers, x, nop);
@@ -464,8 +515,8 @@ fsubmapi(a : Transform<[??]>, fn : (Transform<int>, ??) -> Transform<?>) -> Tran
 					newOutput = ref getValue(output);
 
 					// Call disposers before initializers
-					filtermap(arrayDiff(^input, a0, true), \op ->
-						switch (op : ArrayOperation) {
+					filtermap(arrayDiffWithSwap(^input, a0, true), \op ->
+						switch (op : ArrayOperationWithSwap) {
 							ArrayNop(x, y): {
 								if (x != y) {
 									Some(\ -> {
@@ -474,6 +525,17 @@ fsubmapi(a : Transform<[??]>, fn : (Transform<int>, ??) -> Transform<?>) -> Tran
 								} else {
 									None();
 								}
+							}
+							ArraySwap(x, y, __): {
+								disposers := moveElement(^disposers, x, y + 1);
+
+								Some(\ -> {
+									indexes := moveElement(^indexes, x, y + 1);
+									newOutput := moveElement(^newOutput, x, y + 1);
+
+									nextDistinct(^indexes[x], y + 1);
+									nextDistinct(^indexes[y + 1], x);
+								})
 							}
 							ArrayInsert(x, y, v): {
 								disposers := insertArray(^disposers, x, nop);
@@ -577,6 +639,54 @@ ffold(a : Transform<[??]>, def : ?, fn : (?, ??) -> ?) -> Transform<?> {
 						ArrayReplace(x, y, v): {
 							acc = if (y > 0) (^output[y - 1]).second else def;
 							output := replace(^output, y, Pair(acc, fn(acc, v)));
+						}
+						ArrayRemove(x, y): {
+							output := removeIndex(^output, y);
+						}
+					}
+				);
+
+				input := a0;
+				nested := false;
+			}
+
+			if (length(^output) > 0) {
+				^output[length(^output) - 1].second;
+			} else {
+				def;
+			}
+		}))
+	}
+}
+
+ffoldi(a : Transform<[??]>, def : ?, fn : (int, ?, ??) -> ?) -> Transform<?> {
+	if (isFConst(a)) {
+		const(foldi(fgetValue(a), def, fn));
+	} else {
+		nested = ref false;
+		input = ref [];
+		output : ref [Pair<?, ?>] = ref [];
+
+		fselect(a, FLift(\a0 -> {
+			if (!^nested) {
+				nested := true;
+
+				// Call disposers before initializers
+				map(arrayDiff(^input, a0, true) |> reverseA, \op ->
+					switch (op : ArrayOperation) {
+						ArrayNop(x, y): {
+							acc = if (y > 0) (^output[y - 1]).second else def;
+							if (^output[y].first != acc || x != y) {
+								output := replace(^output, y, Pair(acc, fn(y, acc, a0[y])));
+							}
+						}
+						ArrayInsert(x, y, v): {
+							acc = if (y > 0) (^output[y - 1]).second else def;
+							output := insertArray(^output, y, Pair(acc, fn(y, acc, v)));
+						}
+						ArrayReplace(x, y, v): {
+							acc = if (y > 0) (^output[y - 1]).second else def;
+							output := replace(^output, y, Pair(acc, fn(y, acc, v)));
 						}
 						ArrayRemove(x, y): {
 							output := removeIndex(^output, y);

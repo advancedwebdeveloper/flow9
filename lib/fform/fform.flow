@@ -116,16 +116,10 @@ export {
 
 	FSetPending(pending : Transform<int>, form : FForm);
 
-	FDynamicGroup2(stackChanges : DynamicBehaviour<[FGroupChange]>, currentStack : DynamicBehaviour<[FForm]>, stack : native);
-		FGroupChange ::= FGroupAdd, FGroupDelete, FGroupMove, FGroupReplace;
+	FDynamicGroup2(items : Transform<[FForm]>, stack : native);
 
-		FGroupAdd : (form : FForm, z : int);
-		FGroupDelete : (z : int);
-		FGroupMove : (from : int, to : int);
-		FGroupReplace : (form : FForm, z : int);
-
-	FDynamicGroup(stackChanges : DynamicBehaviour<[FGroupChange]>) -> FDynamicGroup2 {
-		FDynamicGroup2(stackChanges, make([]), captureCallstack());
+	FDynamicGroup(items : Transform<[FForm]>) -> FDynamicGroup2 {
+		FDynamicGroup2(items, captureCallstack());
 	}
 
 	// fform field is used for snapshots, finding tagged forms and prints

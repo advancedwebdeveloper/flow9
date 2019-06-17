@@ -138,7 +138,7 @@ form2PForm(f : Form) -> PForm {
 		Constructor(form, __): form2PForm(form);
 		Create2(current, fn): form2PForm(if (^current != Empty()) ^current else fn());
 		FullWindow(fw, form): PFullWindow(getValue(fw), form2PForm(form));
-		DynamicGroup2(__, __, currentStack, __): form2PForm(Group(getValue(currentStack)));
+		DynamicGroup2(items, __, __): form2PForm(Group(fgetValue(items)));
 	}
 }
 
@@ -195,7 +195,7 @@ pForm2Form(f : PForm) -> Form {
 		Border(__, __, __, __, __): f;
 		Scale(__, __, __): f;
 		FullWindow(__, __): f;
-		DynamicGroup2(__, __, __, __): f;
+		DynamicGroup2(__, __, __): f;
 	}
 }
 

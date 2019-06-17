@@ -1857,16 +1857,10 @@ export {
 		MAccess(prop : [FAccessProperty], m : Material);
 		MPositionScale(positionScale : DynamicBehaviour<PositionScale>, m : Material);
 
-		MDynamicGroup2(stackChanges : DynamicBehaviour<[MGroupChange]>, currentStack : ref [Material], combiner : TCombiner);
-			MGroupChange ::= MGroupAdd, MGroupDelete, MGroupMove, MGroupReplace;
+		MDynamicGroup2(items : Transform<[Material]>, combiner : TCombiner);
 
-				MGroupAdd(mat : Material, z : int);
-				MGroupDelete(z : int);
-				MGroupMove(from : int, to : int);
-				MGroupReplace(mat : Material, z : int);
-
-		MDynamicGroup(stackChanges : DynamicBehaviour<[MGroupChange]>) -> MDynamicGroup2 {
-			MDynamicGroup2(stackChanges, ref [], TGroupCombiner());
+		MDynamicGroup(items : Transform<[Material]>) -> MDynamicGroup2 {
+			MDynamicGroup2(items, TGroupCombiner());
 		}
 
 		// Enables or disables components inside or focus interactions

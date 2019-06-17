@@ -6,6 +6,7 @@ import form/formmetrics;
 import transforms;
 import math/geometry;
 import runtime; // isSameObj
+import fusion_utils;
 
 export {
 
@@ -117,7 +118,7 @@ transformForm(f : Form, fn : (Form) -> TransForm) -> Form {
 
 		Group(layers): transform(\ -> Group(map(layers, \sf -> transformForm(sf, fn))));
 		Grid(rows): transform(\ -> Grid(map(rows, \row -> map(row, \sf -> transformForm(sf, fn)))));
-		DynamicGroup2(sc, c, cs, s) : transform(\ -> DynamicGroup2(sc, c, make(map(getValue(cs), \l -> transformForm(l, fn))), s));
+		DynamicGroup2(items, c, s) : transform(\ -> DynamicGroup2(fmap(items, \l -> transformForm(l, fn)), c, s));
 
 		Switch(case, cases): transform(\ -> Switch(case, map(cases, \sf -> transformForm(sf, fn))));
 		Mutable2(subformB, stack): transform(\ -> Select(subformB, \sf -> transformForm(sf, fn)));
@@ -195,9 +196,9 @@ takeSnapshot(f) {
 	ControlFocus(focus, form): takeSnapshot(form);
 	FullWindow(fullscreen, form): takeSnapshot(form);
 	NativeForm(__, __, form, __): form();
-	DynamicGroup2(__, combiner, currentStack, __): {
-		forms = getValue(currentStack);
-		Group( map(forms, takeSnapshot) ); // Placeholder
+	DynamicGroup2(items, combiner, __): {
+		forms = fgetValue(items);
+		Group(map(forms, takeSnapshot)); // Placeholder
 	}
 	}
 }
@@ -577,7 +578,7 @@ getDynamicFormSize2Ex(form : Form, getExactTopPoint : bool) -> Triple<Form, Beha
 			NativeForm(__, metrics, __, fn): {
 				Triple(form, metrics, \ -> nop);
 			}
-			DynamicGroup2(__, __, __, __) : {
+			DynamicGroup2(__, __, __) : {
 				// Placeholder
 				Triple(form, const(zeroMetrics), \ -> nop);
 			}
@@ -786,16 +787,12 @@ isEmptyFormB2(f : Form) -> Pair<Behaviour<bool>, () -> (() -> void)> {
 		ControlFocus(focus, form): isEmptyFormB2(form);
 		FullWindow(fullscreen, form): isEmptyFormB2(form);
 		NativeForm(__, __, __, fn): Pair(const(false), emptyFormSizeConstructorAction);
-		DynamicGroup2(__, __, currentStack, __) : {
-			result = make( getValue(currentStack) == [] );
+		DynamicGroup2(items, __, __) : {
+			result = make(fgetValue(items) == []);
 
 			Pair(
 				result,
-				\ -> connectSelectu(
-					currentStack,
-					result,
-					eq([])
-				)
+				\ -> fconnect(feq(items, []), result)
 			)
 		}
 	}
@@ -866,8 +863,8 @@ getFormTextAndStyle(f : Form) -> [Pair<string, [CharacterStyle]>] {
 		ControlFocus(focus, form): getFormTextAndStyle(form);
 		FullWindow(fullscreen, form): getFormTextAndStyle(form);
 		NativeForm(__, __, form, __): getFormTextAndStyle(form());
-		DynamicGroup2(__, __, currentStack, __) : {
-			textAndStyleForArray( getValue(currentStack) );
+		DynamicGroup2(items, __, __) : {
+			textAndStyleForArray(fgetValue(items));
 		}
 	}
 }
@@ -918,17 +915,8 @@ hasTaggedForm(f : Form, tag : int) -> bool {
 	ControlFocus(focus, form): hasTaggedForm(form, tag);
 	FullWindow(fullscreen, form): hasTaggedForm(form, tag);
 	NativeForm(__, __, form, __): hasTaggedForm(form(), tag);
-	DynamicGroup2(sc, __, cs, __) : {
-		exists(
-			fold(getValue(sc), getValue(cs), \acc, s ->
-				switch (s : GroupChange) {
-					GroupAdd(form, __): arrayPush(acc, form);
-					GroupDelete(__): acc;
-					GroupMove(__, __): acc;
-				}
-			),
-			\l -> hasTaggedForm(l, tag)
-		);
+	DynamicGroup2(items, __, __) : {
+		exists(fgetValue(items), \l -> hasTaggedForm(l, tag));
 	}
 	}
 }
@@ -1034,7 +1022,7 @@ findTaggedFormPosition2(form : Form, tag : int, exactMatch : bool) -> Point {
 		Video(f, p, l, c): zeroPoint;
 		RealHTML2(url, wh, style): zeroPoint;
 		NativeForm(__, __, f, __): findTaggedFormPosition2(f(), tag, exactMatch);
-		DynamicGroup2(__, combiner, currentStack, __): {
+		DynamicGroup2(items, combiner, __): {
 			plus : (double, double) -> double =
 				\x, y -> x + y;
 
@@ -1049,7 +1037,7 @@ findTaggedFormPosition2(form : Form, tag : int, exactMatch : bool) -> Point {
 				);
 
 			fold(
-				getValue(currentStack),
+				fgetValue(items),
 				Pair(false, zeroPoint),
 				\point : Pair<bool, Point>, f : Form -> {
 					if (!point.first) {
@@ -1334,7 +1322,7 @@ findTaggedFormScale2(form : Form, tag : int, exactMatch : bool) -> Point {
 		Border(l, t, r, b, f): deeper(f);
 		Grid(rows): group(concatA(rows));
 		Group(g): group(g);
-		DynamicGroup2(__, __, cs, __) : group(getValue(cs));
+		DynamicGroup2(items, __, __) : group(fgetValue(items));
 
 		Switch(bf, cases): deeper(cases[getValue(bf)]);
 		Inspect(inspectors, f): {

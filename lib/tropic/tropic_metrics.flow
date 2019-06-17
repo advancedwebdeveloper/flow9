@@ -210,16 +210,16 @@ getTWordMetrics(pt : TWord, env : Tree<string, Tropic>) -> FormMetrics {
 			tr = fgetValue(mt);
 			getTWordMetrics(tr, env);
 		}
-		TDynamicGroup2(__, cs, combiner): {
+		TDynamicGroup2(items, combiner): {
 			getTWordMetrics(
 				if (combiner == TGroupCombiner())
-					TGroup(^cs)
+					TGroup(fgetValue(items))
 				else if (combiner == TColsCombiner())
-					TCols(^cs)
+					TCols(fgetValue(items))
 				else if (combiner == TColsACombiner())
-					TColsA(^cs)
+					TColsA(fgetValue(items))
 				else
-					TLines(^cs),
+					TLines(fgetValue(items)),
 				env
 			);
 		}
